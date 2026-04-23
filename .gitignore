@@ -26,3 +26,4 @@ yarn-error.log*
 .vscode/settings.json
 error-message.txt
 prompt.md
+claude_sessions/
