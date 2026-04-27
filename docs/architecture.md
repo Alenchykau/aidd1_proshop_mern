@@ -152,7 +152,7 @@ sequenceDiagram
   FE->>API: PUT /api/orders/:id/pay (paymentResult)
   API->>AUTH: protect
   API->>OC: updateOrderToPaid
-  OC->>OM: order.isPaid=true, paidAt, paymentResult; save()
+  OC->>OM: set isPaid/paidAt/paymentResult, then save()
   OM->>DB: update order
   DB-->>OC: updatedOrder
   OC-->>FE: 200 updatedOrder
