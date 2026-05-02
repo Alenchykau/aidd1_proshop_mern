@@ -1,0 +1,22 @@
+{
+  "name": "mcp-feature-flags",
+  "version": "1.0.0",
+  "description": "MCP server for managing ProShop feature flags (project-data/features.json)",
+  "type": "module",
+  "bin": {
+    "mcp-feature-flags": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}

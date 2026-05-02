@@ -36,6 +36,27 @@
 - `react-bootstrap` `1.3.0`, `react-router-bootstrap` `0.25.0`
 - `react-helmet` `6.1.0`, `react-paypal-button-v2` `2.6.2`
 
+## MCP Server: Feature Flags
+
+Папка [`mcp-feature-flags/`](./mcp-feature-flags) содержит MCP-сервер (stdio) для управления флагами в [`project-data/features.json`](./project-data/features.json). Используется ассистентом для чтения и изменения статусов фич без правок в код.
+
+**Стек:** TypeScript + [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk) (TS SDK) + [`zod`](https://zod.dev) для валидации входов. Сборка через `tsc` (ESM, target ES2022).
+
+**Tools (3):**
+- `get_feature_info(feature_name)` — полные данные фичи + текущий статус каждой зависимости.
+- `set_feature_state(feature_name, state)` — `Disabled | Testing | Enabled`. Жёсткий блок: переход в `Enabled` запрещён, если хотя бы одна зависимость в `Disabled` (ошибка `DEPENDENCY_NOT_ENABLED`).
+- `adjust_traffic_rollout(feature_name, percentage)` — целое 0–100. Жёсткий lock: `percentage > 0` запрещён при `status="Disabled"` (ошибка `DISABLED_TRAFFIC_LOCKED`).
+
+**Запуск:**
+```bash
+cd mcp-feature-flags
+npm install
+npm run build
+npm start                # node dist/server.js — слушает MCP по stdio
+```
+
+Подключение в `claude_desktop_config.json` / IDE-плагине: указать `command: node`, `args: ["<absolute-path>/mcp-feature-flags/dist/server.js"]`.
+
 ## Project Structure
 
 ```
@@ -61,6 +82,11 @@ proshop/
 │     ├─ store.js              # combineReducers + thunk + localStorage rehydrate
 │     ├─ App.js                # Routing (react-router-dom v5)
 │     └─ index.js
+├─ mcp-feature-flags/          # MCP server (TS SDK + Zod) — управление features.json
+│  ├─ server.ts                # Один файл, 3 tools: get_feature_info / set_feature_state / adjust_traffic_rollout
+│  ├─ package.json             # Отдельные deps от MERN-приложения
+│  └─ tsconfig.json
+├─ project-data/               # Данные для MCP-сервера (features.json и сопутствующая документация)
 ├─ uploads/                    # Multer target — product images (gitignored в проде)
 ├─ .env                        # См. ниже (gitignored)
 ├─ package.json                # Backend deps + scripts
