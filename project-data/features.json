@@ -3,8 +3,8 @@
     "name": "New Search Algorithm",
     "description": "Replaces legacy regex-based keyword matching with a hybrid BM25 + TF-IDF ranking pipeline. Improves relevance for multi-word queries and handles common misspellings via fuzzy matching. Backend: new productController search path; index built on name, brand, category, description fields.",
     "status": "Testing",
-    "traffic_percentage": 15,
-    "last_modified": "2026-03-10",
+    "traffic_percentage": 25,
+    "last_modified": "2026-05-03",
     "targeted_segments": [
       "beta_users",
       "internal"
@@ -89,9 +89,9 @@
   "multi_step_checkout_v2": {
     "name": "Redesigned Multi-Step Checkout",
     "description": "Replaces the current 4-step linear checkout (CheckoutSteps component) with a validated stepper that shows a progress indicator, allows backward navigation without data loss, and provides inline address validation. Shipping, payment, and order review are on separate animated panels rather than full page redirects.",
-    "status": "Testing",
-    "traffic_percentage": 20,
-    "last_modified": "2026-04-10",
+    "status": "Disabled",
+    "traffic_percentage": 0,
+    "last_modified": "2026-05-03",
     "targeted_segments": [
       "all"
     ],
@@ -100,9 +100,9 @@
   "gift_message": {
     "name": "Gift Message at Checkout",
     "description": "Adds an optional gift message textarea on the PlaceOrderScreen. The message is stored on the Order document (orderModel extension: giftMessage: String) and printed on the packing slip. Increases average order value for gift-occasion purchases.",
-    "status": "Disabled",
-    "traffic_percentage": 0,
-    "last_modified": "2026-02-20",
+    "status": "Testing",
+    "traffic_percentage": 10,
+    "last_modified": "2026-05-03",
     "targeted_segments": [
       "all"
     ],

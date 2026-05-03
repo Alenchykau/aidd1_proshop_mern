@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "feature-flags": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "mcp-feature-flags/dist/server.js"
+      ],
+      "env": {}
+    }
+  }
+}
