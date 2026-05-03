@@ -27,3 +27,13 @@ yarn-error.log*
 error-message.txt
 prompt.md
 claude_sessions/
+
+# Transient RAG pipeline outputs
+tmp/
+
+# Python venv and cache
+.venv-rag/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
