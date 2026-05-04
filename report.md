@@ -306,3 +306,50 @@ Pre-filter `group=incidents` сужает пул до 25 чанков, поэт�
 - **Pre-filter работает**: `group=incidents` корректно сужает поиск до нужного типа.
 - **Recall на ADR-документах слабый** из-за раздробленного chunking — известный trade-off, фиксится reranker-ом или hybrid search вне рамок этой задачи.
 - **Отсутствие галлюцинаций**: по запросу о несуществующем флаге система возвращает близкие по смыслу чанки, не выдумывает.
+
+## Task 3 — Step 5: Починка recall (hybrid retrieval)
+
+### Проблема
+
+Запрос 1 («Какая БД используется в proshop_mern и почему именно она?») возвращал в top-5 только мета-документы (`dev-history#20`, `architecture#1`, `best-practices#1`). Канонический источник — `adrs/adr-001-mongodb-vs-postgres` — не попадал даже в top-50.
+
+Диагностика прямой cosine-проверкой:
+
+```
+ADR-001 chunks vs query:    0.43–0.55
+Meta-docs vs query:          0.63–0.66
+```
+
+Разрыв 15–20 пунктов. Причины:
+
+1. **Chunking trade-off**: ADR-001 разбит на 6 коротких секционных чанков (Header / Context / Decision / Consequences / Alternatives / Assessment). В каждом мало плотности «MongoDB+решение+причина», тогда как `dev-history#20` за один 50-токенный чанк содержит «Five major decisions documented: MongoDB over PostgreSQL, …».
+2. **Cross-lingual gap**: запрос на русском, корпус ADR — на английском. Слово «БД» лексически не пересекается с «MongoDB», а семантически BGE-M3 предпочитает summary-style тексты («ProShop is a full-stack MERN e-commerce app…») точечным секционным.
+3. **Тело ADR-чанков содержит технические детали** (Mongoose schemas, `connectDB`, `useCreateIndex`), которые семантически удаляют embedding от плоского вопроса «которая БД».
+
+### Что попробовали
+
+| Подход | Результат |
+|---|---|
+| Contextual embedding prefix (title + summary + keywords + text) | Не помогло. ADR-001 остался ниже 0.50, мета-доки 0.60+. |
+| Summary-only embedding (отбросить body) | Сузил разрыв (ADR 0.43–0.46 vs мета 0.50–0.62), но не дотянул. |
+| Hybrid retrieval (dense + BM25, RRF k=60) | **Сработало** для запросов с явными ключевыми словами; cross-lingual запрос 1 — частично. |
+
+### Финальная реализация
+
+`scripts/rag_query.py` — `HybridRetriever`:
+- Dense: BGE-M3 через Qdrant (`prefetch_limit=50`).
+- BM25: `rank_bm25.BM25Okapi` поверх `title + summary + keywords + text` всех 604 чанков (in-memory, build <100мс).
+- Fusion: Reciprocal Rank Fusion, `score = Σ 1/(k + rank_i)`, k=60.
+- CLI: `--mode hybrid|dense|bm25` (default hybrid).
+
+### Сравнение результатов
+
+| Запрос | Dense (было) | Hybrid (стало) | Эффект |
+|---|---|---|---|
+| 1. «Какая БД и почему?» | dev-history#20 (0.664) | best-practices#1 (0.0307) | ~ Не сдвинулось из-за cross-lingual gap. На английском «Why MongoDB chosen as database?» — все 5 чанков ADR-001 в top-5. |
+| 2. «Зависит от payment_stripe_v3?» | adrs/adr-004#4 (Stripe-альтернативы) | features/checkout#3 + features/payments#12,#13 | ✓ Тянет реализующие фичи, а не теоретический ADR |
+| 3. «Incident с checkout?» | i-001#2 + i-001#4 + i-002#1 (Mongo pool) | i-001#0 + i-001#3 + i-001#2 (всё про PayPal) | ✓ Все 3 из релевантного incident'а |
+
+### Что осталось
+
+Query 1 в исходной формулировке упирается в фундаментальный cross-lingual gap: ни одно слово запроса не пересекается с текстом ADR. Полностью лечится **query expansion** через локальный chat-LLM (rephrase + перевод на язык корпуса) — отложено вне scope.
