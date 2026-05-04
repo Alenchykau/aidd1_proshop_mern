@@ -244,3 +244,12 @@ Tool call: `mcp__feature-flags__get_feature_info`
 - rollout_strategy: `full_release`
 - targeted_segments: `all`
 - dependencies_state: пусто (зависимостей нет)
+## Task 3 — Step 2: Vector DB chunking
+
+- Local Qdrant (v1.17.1) installed at `D:\Soft\qdrant\` (no Docker).
+- Documentation moved to `docs/project-data/` (preserved git history via `git mv`).
+- Chunking pipeline in `scripts/build_chunks/` + entrypoint `scripts/build_chunks.py`.
+- Final artifact: `docs/chunks.jsonl` — 604 chunks across 7 dispatch groups (top-level/208, pages/126, features/94, runbooks/70, api/46, adrs/35, incidents/25). Languages: 508 en / 72 mixed / 24 ru.
+- Pipeline: deterministic chunker (Python, 39 unit tests) → parallel Sonnet subagents per group enrich summary/keywords/language → validator merges into single JSONL.
+- Design spec: `docs/superpowers/specs/2026-05-03-vector-db-chunking-design.md`.
+- Implementation plan: `docs/superpowers/plans/2026-05-03-vector-db-chunking.md`.

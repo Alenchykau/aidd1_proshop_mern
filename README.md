@@ -321,6 +321,11 @@ Endpoint `GET /api/config/paypal` возвращает `PAYPAL_CLIENT_ID` из `
 
 ---
 
+## Domain documentation and RAG chunks
+
+- `docs/project-data/` — long-form documentation about the project (architecture, ADRs, API reference, feature deep-dives, runbooks, incidents, page descriptions). Used as the corpus for the local RAG demo.
+- `docs/chunks.jsonl` — generated artifact: one chunk per line, ready to be embedded with BGE-M3 and indexed into the local Qdrant instance. Regenerate via `python scripts/build_chunks.py prepare` + parallel Sonnet enrichment subagents + `python scripts/build_chunks.py validate`. See `docs/superpowers/specs/2026-05-03-vector-db-chunking-design.md` for the chunking design.
+
 ## License
 
 MIT — © 2020 Traversy Media (upstream). Форк используется в учебных целях.
