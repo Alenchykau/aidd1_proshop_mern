@@ -253,3 +253,56 @@ Tool call: `mcp__feature-flags__get_feature_info`
 - Pipeline: deterministic chunker (Python, 39 unit tests) → parallel Sonnet subagents per group enrich summary/keywords/language → validator merges into single JSONL.
 - Design spec: `docs/superpowers/specs/2026-05-03-vector-db-chunking-design.md`.
 - Implementation plan: `docs/superpowers/plans/2026-05-03-vector-db-chunking.md`.
+
+## Task 3 — Step 4: RAG query тестирование
+
+Embedding-модель: BGE-M3 через локальный Ollama (`http://localhost:11434`), dim=1024, cosine distance. Vector store: Qdrant `proshop_chunks`, 604 точки. Query script: `scripts/rag_query.py`.
+
+### Запрос 1 — factual single-hop
+
+```
+$ python scripts/rag_query.py "Какая БД используется в proshop_mern и почему именно она?" --top-k 3
+```
+
+```
+[0.664] dev-history#20         (top-level) — Five major decisions documented: MongoDB over PostgreSQL, ...
+[0.655] architecture#1         (top-level) — ProShop is a full-stack MERN e-commerce app ...
+[0.653] best-practices#1       (top-level) — ProShop v1 was deprecated due to CRA, classic Redux ...
+```
+
+Ожидался `adrs/adr-001-mongodb-vs-postgres`. В top-3 пришли мета-документы (history/architecture), которые тоже отвечают на вопрос. ADR-001 не попал даже в top-5 — chunking разбил его на 6 коротких чанков, и ни один из них индивидуально не побивает dev-history#20, где «MongoDB over PostgreSQL» сжато в один плотный chunk. Решения для production: reranker, hybrid search (BM25+vector), либо не дробить короткие ADR.
+
+### Запрос 2 — multi-hop dependency (несуществующий флаг)
+
+```
+$ python scripts/rag_query.py "Какие фичи зависят от payment_stripe_v3?" --top-k 3
+```
+
+```
+[0.669] adrs/adr-004-paypal-vs-stripe#4    (adrs)       — Alternatives to PayPal considered, with Stripe ...
+[0.664] adrs/adr-004-paypal-vs-stripe#5    (adrs)       — Migration path to Stripe ...
+[0.652] features.json#stripe_alternative   (top-level)  — stripe_alternative flag enables the commented-out Stripe ...
+```
+
+Флага `payment_stripe_v3` в корпусе **нет** — реальный флаг `stripe_alternative`. Система не галлюцинирует, а тянет ближайшее по смыслу: ADR-004 (PayPal vs Stripe) и `features.json#stripe_alternative`. Не попал в top-3 `features.json#apple_pay`, который depends on `stripe_alternative` — увеличение top-k или фильтр `group=top-level` подтянули бы его.
+
+### Запрос 3 — filter by group + retrieval
+
+```
+$ python scripts/rag_query.py "Что случилось во время последнего incident с checkout?" --top-k 3 --group incidents
+```
+
+```
+[0.579] incidents/i-001-paypal-double-charge#2     (incidents) — Detailed event timeline for the PayPal double-charge ...
+[0.551] incidents/i-001-paypal-double-charge#4     (incidents) — Root cause analysis showing the pay endpoint lacked ...
+[0.547] incidents/i-002-mongo-connection-pool-... (incidents) — Summarizes the Black Friday P0 outage ...
+```
+
+Pre-filter `group=incidents` сужает пул до 25 чанков, поэтому абсолютные score ниже (0.55–0.58). Top-1 — PayPal double-charge incident, что и есть «checkout incident». Top-3 — 2 чанка про PayPal + 1 про MongoDB pool exhaustion (формально не checkout, но Black Friday checkout-критичный outage).
+
+### Выводы по тестам
+
+- **Языковая инвариантность**: en+ru запросы работают одинаково (BGE-M3 multilingual оправдывает выбор).
+- **Pre-filter работает**: `group=incidents` корректно сужает поиск до нужного типа.
+- **Recall на ADR-документах слабый** из-за раздробленного chunking — известный trade-off, фиксится reranker-ом или hybrid search вне рамок этой задачи.
+- **Отсутствие галлюцинаций**: по запросу о несуществующем флаге система возвращает близкие по смыслу чанки, не выдумывает.
