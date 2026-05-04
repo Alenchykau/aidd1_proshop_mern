@@ -46,6 +46,28 @@ def _ensure_collection(qd: QdrantClient, name: str, recreate: bool) -> None:
         )
 
 
+def _embed_with_retry(oc, rec) -> list[float] | None:
+    """Embed text with retries. Ollama's bge-m3 occasionally emits NaN for very
+    short inputs; retry with progressively richer padding until non-NaN."""
+    text = rec["text"]
+    meta = rec["metadata"]
+    title = meta.get("title", "")
+    summary = meta.get("summary", "")
+    keywords = " ".join(meta.get("keywords", []))
+    attempts = [
+        text,
+        f"{text}\n\n{title}",
+        f"{text}\n\n{summary} {keywords}",
+    ]
+    for prompt in attempts:
+        try:
+            resp = oc.embeddings(model=EMBED_MODEL, prompt=prompt)
+            return list(resp["embedding"])
+        except Exception:
+            continue
+    return None
+
+
 def _iter_chunks(path: Path, limit: int | None):
     with path.open(encoding="utf-8") as fh:
         for i, line in enumerate(fh):
@@ -85,11 +107,9 @@ def main(argv: list[str] | None = None) -> int:
     failures: list[tuple[str, str]] = []
 
     for rec in tqdm(chunks, unit="chunk"):
-        try:
-            resp = oc.embeddings(model=EMBED_MODEL, prompt=rec["text"])
-            vec = resp["embedding"]
-        except Exception as e:
-            failures.append((rec["id"], str(e)))
+        vec = _embed_with_retry(oc, rec)
+        if vec is None:
+            failures.append((rec["id"], "NaN after retries"))
             continue
 
         payload = {"id": rec["id"], "text": rec["text"], **rec["metadata"]}
