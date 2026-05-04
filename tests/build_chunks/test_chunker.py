@@ -105,3 +105,60 @@ def test_paragraph_split_does_not_break_inside_code_block():
     for c in chunks:
         opens = c.text.count("```")
         assert opens % 2 == 0, f"unbalanced fences in chunk {c.id}"
+
+
+def test_small_h2_with_short_h3_children_emitted_as_one_chunk():
+    # H2 with two tiny H3s — total fits comfortably in MAX, so the whole H2
+    # is emitted as a single chunk (no H3 split triggered). Verifies the
+    # natural "no stub" behaviour without needing an explicit merge pass.
+    md = "# T\n\n## A\n\n### One\n\nshort.\n\n### Two\n\nalso short.\n"
+    chunks = chunk_markdown(md, source_file="x.md", file_path="docs/project-data/x.md", group="top-level")
+    assert len(chunks) == 1
+    assert chunks[0].metadata.parent_headings == ["A"]
+
+
+def test_features_json_renders_one_chunk_per_flag():
+    from scripts.build_chunks.chunker import chunk_features_json
+    payload = {
+        "search_v2": {
+            "name": "New Search",
+            "description": "Replaces regex with BM25.",
+            "status": "Testing",
+            "traffic_percentage": 25,
+            "rollout_strategy": "canary",
+            "targeted_segments": ["beta_users"],
+            "last_modified": "2026-05-03",
+        }
+    }
+    chunks = chunk_features_json(
+        payload,
+        source_file="features.json",
+        file_path="docs/project-data/features.json",
+        group="top-level",
+    )
+    assert len(chunks) == 1
+    c = chunks[0]
+    assert c.id == "features.json#search_v2"
+    assert c.metadata.flag_key == "search_v2"
+    assert c.metadata.flag_status == "Testing"
+    assert c.metadata.traffic_percentage == 25
+    assert "Replaces regex with BM25" in c.text
+    assert "Testing" not in c.text  # volatile state stays out of embedded text
+
+
+def test_no_h1_falls_back_to_filename_title():
+    md = "## Section A\n\nbody.\n"
+    chunks = chunk_markdown(md, source_file="feature-flag-toggle.md",
+                            file_path="docs/project-data/runbooks/feature-flag-toggle.md",
+                            group="runbooks")
+    assert chunks[0].metadata.title == "Feature Flag Toggle"
+
+
+def test_preamble_between_h1_and_first_h2_emits_implicit_chunk():
+    md = ("# Doc Title\n\n"
+          "Important preamble paragraph that lives before any H2.\n\n"
+          "## First Section\n\nBody.\n")
+    chunks = chunk_markdown(md, source_file="x.md", file_path="docs/project-data/x.md", group="top-level")
+    preamble_chunks = [c for c in chunks if c.metadata.parent_headings == []]
+    assert len(preamble_chunks) == 1
+    assert "Important preamble" in preamble_chunks[0].text

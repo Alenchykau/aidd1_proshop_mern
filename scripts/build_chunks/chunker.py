@@ -49,10 +49,13 @@ class _Section:
 
 
 def _parse_tree(md: str) -> tuple[str, list[_Section]]:
-    """Returns (h1_title, list of H2 sections, each with optional H3 children)."""
+    """Returns (h1_title, list of H2 sections, each with optional H3 children).
+    Text between H1 and the first H2 is captured as a synthetic section with
+    empty title (treated as preamble by callers)."""
     h1_title = ""
     h2_sections: list[_Section] = []
-    current_h2: _Section | None = None
+    preamble = _Section(title="", level=2)  # empty title marks preamble
+    current_h2: _Section | None = preamble
     current_h3: _Section | None = None
     saw_h1 = False
     buffer: list[str] = []
@@ -71,17 +74,24 @@ def _parse_tree(md: str) -> tuple[str, list[_Section]]:
             continue
         if stripped.startswith("## "):
             flush_buffer_to(current_h3 or current_h2)
+            if current_h2 is preamble and preamble.body.strip():
+                h2_sections.append(preamble)
             current_h2 = _Section(title=stripped[3:].strip(), level=2)
             current_h3 = None
             h2_sections.append(current_h2)
             continue
-        if stripped.startswith("### ") and current_h2 is not None:
+        if stripped.startswith("### ") and current_h2 is not None and current_h2 is not preamble:
             flush_buffer_to(current_h3 or current_h2)
             current_h3 = _Section(title=stripped[4:].strip(), level=3)
             current_h2.children.append(current_h3)
             continue
         buffer.append(line)
     flush_buffer_to(current_h3 or current_h2)
+
+    # If no H2 ever appeared, preamble holds entire body
+    if current_h2 is preamble and preamble.body.strip():
+        h2_sections.append(preamble)
+
     for s in h2_sections:
         s.body = s.body.strip()
         for c in s.children:
@@ -101,32 +111,29 @@ def chunk_markdown(
         h1_title = Path(source_file).stem.replace("-", " ").replace("_", " ").title()
 
     pre_chunks: list[tuple[list[str], str]] = []
-    if not sections:
-        # No H2 — emit whole body as single chunk (still need to extract body before H1)
-        body = "\n".join(line for line in md.splitlines() if not line.lstrip().startswith("# "))
-        if body.strip():
-            pre_chunks.append(([], body.strip()))
-    else:
+    if sections:
         for h2 in sections:
+            parents = [h2.title] if h2.title else []
             full_body = h2.body
             if h2.children:
                 full_body += "\n\n" + "\n\n".join(
                     f"### {c.title}\n\n{c.body}" for c in h2.children
                 )
-            tokens_for_full = count_tokens(_format_text(h1_title, [h2.title], full_body))
+            tokens_for_full = count_tokens(_format_text(h1_title, parents, full_body))
             if tokens_for_full <= MAX:
-                pre_chunks.append(([h2.title], full_body))
+                pre_chunks.append((parents, full_body))
             elif h2.children:
                 if h2.body.strip():
-                    pre_chunks.extend(_split_by_paragraph([h2.title], h1_title, h2.body.strip()))
+                    pre_chunks.extend(_split_by_paragraph(parents, h1_title, h2.body.strip()))
                 for child in h2.children:
-                    child_tokens = count_tokens(_format_text(h1_title, [h2.title, child.title], child.body))
+                    child_parents = parents + [child.title]
+                    child_tokens = count_tokens(_format_text(h1_title, child_parents, child.body))
                     if child_tokens <= MAX:
-                        pre_chunks.append(([h2.title, child.title], child.body))
+                        pre_chunks.append((child_parents, child.body))
                     else:
-                        pre_chunks.extend(_split_by_paragraph([h2.title, child.title], h1_title, child.body))
+                        pre_chunks.extend(_split_by_paragraph(child_parents, h1_title, child.body))
             else:
-                pre_chunks.extend(_split_by_paragraph([h2.title], h1_title, full_body))
+                pre_chunks.extend(_split_by_paragraph(parents, h1_title, full_body))
 
     if not pre_chunks:
         return []
@@ -244,4 +251,42 @@ def _split_by_paragraph(parents: list[str], h1: str, body: str) -> list[tuple[li
         current.append(block)
         current_tokens += block_tokens
     emit()
+    return chunks
+
+
+def chunk_features_json(payload: dict, *, source_file: str, file_path: str, group: str) -> list[Chunk]:
+    chunks: list[Chunk] = []
+    keys = list(payload.keys())
+    total = len(keys)
+    for idx, key in enumerate(keys):
+        flag = payload[key]
+        deps = flag.get("dependencies") or "none"
+        if isinstance(deps, list):
+            deps = ", ".join(deps) if deps else "none"
+        text_body = (
+            f"# Feature: {flag['name']}\n\n"
+            f"**Flag key:** {key}\n\n"
+            f"{flag['description']}\n\n"
+            f"**Dependencies:** {deps}\n"
+            f"**Rollout strategy:** {flag.get('rollout_strategy', 'unknown')}\n"
+        )
+        meta = Metadata(
+            source_file=source_file,
+            file_path=file_path,
+            title=flag["name"],
+            parent_headings=[],
+            keywords=list(_PLACEHOLDER_KEYWORDS),
+            summary=_PLACEHOLDER_SUMMARY,
+            language=_detect_language(flag["description"]),
+            token_count=count_tokens(text_body),
+            chunk_index=idx,
+            chunk_total=total,
+            group=group,
+            flag_key=key,
+            flag_status=flag.get("status", "Unknown"),
+            traffic_percentage=int(flag.get("traffic_percentage", 0)),
+            rollout_strategy=flag.get("rollout_strategy", "unknown"),
+            targeted_segments=flag.get("targeted_segments", []),
+        )
+        chunks.append(Chunk(id=f"features.json#{key}", text=text_body, metadata=meta))
     return chunks
