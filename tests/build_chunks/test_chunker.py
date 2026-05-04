@@ -67,8 +67,8 @@ def test_summary_and_keywords_are_placeholders_until_enrichment():
 
 
 def test_oversized_h2_splits_at_h3_boundaries():
-    # Build an H2 with two H3 sections, each individually under MAX
-    long_para = ("Sentence number one. " * 80).strip()  # ~80 sentences
+    # Build an H2 with two H3 sections that combined exceed MAX (700 tokens)
+    long_para = ("Sentence number one. " * 200).strip()
     md = (
         "# T\n\n## Big H2\n\n### First H3\n\n"
         + long_para

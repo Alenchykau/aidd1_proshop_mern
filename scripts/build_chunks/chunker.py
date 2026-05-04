@@ -113,7 +113,7 @@ def chunk_markdown(
                     f"### {c.title}\n\n{c.body}" for c in h2.children
                 )
             tokens_for_full = count_tokens(_format_text(h1_title, [h2.title], full_body))
-            if tokens_for_full <= TARGET or not h2.children:
+            if tokens_for_full <= MAX or not h2.children:
                 pre_chunks.append(([h2.title], full_body))
             else:
                 # Split at H3 boundaries
