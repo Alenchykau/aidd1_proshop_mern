@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -38,19 +39,29 @@ def _id_for(file_path: str, seq: int | str) -> str:
     return f"{rel_no_ext.as_posix()}#{seq}"
 
 
-def _split_h1_and_sections(md: str) -> tuple[str, list[tuple[str, str]]]:
-    """
-    Returns (h1_title, [(h2_title, h2_body), ...]).
-    h2_body includes everything until the next H2 (including any H3+ content).
-    Content between H1 and the first H2 is treated as a synthetic section
-    with empty title (caller decides how to expose it).
-    """
+@dataclass
+class _Section:
+    title: str
+    level: int  # 2 or 3
+    body: str = ""
+    children: list["_Section"] = field(default_factory=list)
+
+
+def _parse_tree(md: str) -> tuple[str, list[_Section]]:
+    """Returns (h1_title, list of H2 sections, each with optional H3 children)."""
     h1_title = ""
-    sections: list[tuple[str, str]] = []
-    current_title = ""
-    current_body: list[str] = []
-    in_h2 = False
+    h2_sections: list[_Section] = []
+    current_h2: _Section | None = None
+    current_h3: _Section | None = None
     saw_h1 = False
+    buffer: list[str] = []
+
+    def flush_buffer_to(target: _Section | None):
+        nonlocal buffer
+        if buffer and target is not None:
+            target.body += "".join(buffer)
+        buffer = []
+
     for line in md.splitlines(keepends=True):
         stripped = line.lstrip()
         if stripped.startswith("# ") and not saw_h1:
@@ -58,19 +69,23 @@ def _split_h1_and_sections(md: str) -> tuple[str, list[tuple[str, str]]]:
             saw_h1 = True
             continue
         if stripped.startswith("## "):
-            if in_h2 or current_body:
-                sections.append((current_title, "".join(current_body).strip()))
-            current_title = stripped[3:].strip()
-            current_body = []
-            in_h2 = True
+            flush_buffer_to(current_h3 or current_h2)
+            current_h2 = _Section(title=stripped[3:].strip(), level=2)
+            current_h3 = None
+            h2_sections.append(current_h2)
             continue
-        current_body.append(line)
-    if current_body or in_h2:
-        sections.append((current_title, "".join(current_body).strip()))
-
-    # Drop preamble entry (title="") if its body is empty
-    sections = [(t, b) for (t, b) in sections if t or b]
-    return h1_title, sections
+        if stripped.startswith("### ") and current_h2 is not None:
+            flush_buffer_to(current_h3 or current_h2)
+            current_h3 = _Section(title=stripped[4:].strip(), level=3)
+            current_h2.children.append(current_h3)
+            continue
+        buffer.append(line)
+    flush_buffer_to(current_h3 or current_h2)
+    for s in h2_sections:
+        s.body = s.body.strip()
+        for c in s.children:
+            c.body = c.body.strip()
+    return h1_title, h2_sections
 
 
 def chunk_markdown(
@@ -80,38 +95,54 @@ def chunk_markdown(
     file_path: str,
     group: str,
 ) -> list[Chunk]:
-    h1_title, sections = _split_h1_and_sections(md)
+    h1_title, sections = _parse_tree(md)
     if not h1_title:
         h1_title = Path(source_file).stem.replace("-", " ").replace("_", " ").title()
 
-    chunks: list[Chunk] = []
-    pre_chunks: list[tuple[list[str], str]] = []  # (parent_headings, body)
-    for h2_title, body in sections:
-        parents = [h2_title] if h2_title else []
-        pre_chunks.append((parents, body))
+    pre_chunks: list[tuple[list[str], str]] = []
+    if not sections:
+        # No H2 — emit whole body as single chunk (still need to extract body before H1)
+        body = "\n".join(line for line in md.splitlines() if not line.lstrip().startswith("# "))
+        if body.strip():
+            pre_chunks.append(([], body.strip()))
+    else:
+        for h2 in sections:
+            full_body = h2.body
+            if h2.children:
+                full_body += "\n\n" + "\n\n".join(
+                    f"### {c.title}\n\n{c.body}" for c in h2.children
+                )
+            tokens_for_full = count_tokens(_format_text(h1_title, [h2.title], full_body))
+            if tokens_for_full <= TARGET or not h2.children:
+                pre_chunks.append(([h2.title], full_body))
+            else:
+                # Split at H3 boundaries
+                if h2.body.strip():
+                    pre_chunks.append(([h2.title], h2.body.strip()))
+                for child in h2.children:
+                    pre_chunks.append(([h2.title, child.title], child.body))
 
     if not pre_chunks:
-        # No body at all — nothing to emit
         return []
 
+    chunks: list[Chunk] = []
     total = len(pre_chunks)
     for idx, (parents, body) in enumerate(pre_chunks):
-        prefix = f"# {h1_title}\n\n"
-        if parents:
-            prefix += f"## {parents[0]}\n\n"
-        text = prefix + body + ("\n" if not body.endswith("\n") else "")
+        text = _format_text(h1_title, parents, body)
         meta = Metadata(
-            source_file=source_file,
-            file_path=file_path,
-            title=h1_title,
-            parent_headings=parents,
-            keywords=list(_PLACEHOLDER_KEYWORDS),
-            summary=_PLACEHOLDER_SUMMARY,
-            language=_detect_language(body),
-            token_count=count_tokens(text),
-            chunk_index=idx,
-            chunk_total=total,
+            source_file=source_file, file_path=file_path, title=h1_title,
+            parent_headings=parents, keywords=list(_PLACEHOLDER_KEYWORDS),
+            summary=_PLACEHOLDER_SUMMARY, language=_detect_language(body),
+            token_count=count_tokens(text), chunk_index=idx, chunk_total=total,
             group=group,
         )
         chunks.append(Chunk(id=_id_for(file_path, idx), text=text, metadata=meta))
     return chunks
+
+
+def _format_text(h1: str, parents: list[str], body: str) -> str:
+    prefix = f"# {h1}\n\n"
+    if parents:
+        bc = " > ".join(parents)
+        prefix += f"## {bc}\n\n"
+    return prefix + body + ("\n" if not body.endswith("\n") else "")

@@ -64,3 +64,22 @@ def test_summary_and_keywords_are_placeholders_until_enrichment():
     # Pre-enrichment: minimal valid placeholders so schema passes
     assert chunks[0].metadata.summary.endswith(".")
     assert len(chunks[0].metadata.keywords) >= 3
+
+
+def test_oversized_h2_splits_at_h3_boundaries():
+    # Build an H2 with two H3 sections, each individually under MAX
+    long_para = ("Sentence number one. " * 80).strip()  # ~80 sentences
+    md = (
+        "# T\n\n## Big H2\n\n### First H3\n\n"
+        + long_para
+        + "\n\n### Second H3\n\n"
+        + long_para
+        + "\n"
+    )
+    chunks = chunk_markdown(md, source_file="x.md", file_path="docs/project-data/x.md", group="top-level")
+    # Expect at least 2 chunks (one per H3), each carrying H2 + H3 in parent_headings
+    h3_chunks = [c for c in chunks if len(c.metadata.parent_headings) == 2]
+    assert len(h3_chunks) >= 2
+    titles = {tuple(c.metadata.parent_headings) for c in h3_chunks}
+    assert ("Big H2", "First H3") in titles
+    assert ("Big H2", "Second H3") in titles
