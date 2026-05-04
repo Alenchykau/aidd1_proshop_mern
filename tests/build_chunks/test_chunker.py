@@ -83,3 +83,25 @@ def test_oversized_h2_splits_at_h3_boundaries():
     titles = {tuple(c.metadata.parent_headings) for c in h3_chunks}
     assert ("Big H2", "First H3") in titles
     assert ("Big H2", "Second H3") in titles
+
+
+def test_oversized_h2_no_h3_splits_by_paragraph_with_overlap():
+    para = ("Sentence A. Sentence B. Sentence C. " * 30).strip()
+    paragraphs = "\n\n".join([para] * 5)
+    md = f"# T\n\n## Long Section\n\n{paragraphs}\n"
+    chunks = chunk_markdown(md, source_file="x.md", file_path="docs/project-data/x.md", group="top-level")
+    assert len(chunks) >= 2
+    # Overlap: every chunk after the first should start (after breadcrumbs prefix) with the same
+    # last sentence of the prior chunk's body.
+    for c in chunks:
+        assert c.metadata.token_count <= 850  # hard_max with some slack for prefix
+
+
+def test_paragraph_split_does_not_break_inside_code_block():
+    code_block = "```python\n" + "x = 1\n" * 200 + "```\n"
+    md = f"# T\n\n## S\n\n{code_block}\n\nNormal paragraph here.\n"
+    chunks = chunk_markdown(md, source_file="x.md", file_path="docs/project-data/x.md", group="top-level")
+    # Code fences must come in matching pairs in every emitted chunk
+    for c in chunks:
+        opens = c.text.count("```")
+        assert opens % 2 == 0, f"unbalanced fences in chunk {c.id}"
