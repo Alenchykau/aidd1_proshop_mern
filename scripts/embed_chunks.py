@@ -46,19 +46,34 @@ def _ensure_collection(qd: QdrantClient, name: str, recreate: bool) -> None:
         )
 
 
-def _embed_with_retry(oc, rec) -> list[float] | None:
-    """Embed text with retries. Ollama's bge-m3 occasionally emits NaN for very
-    short inputs; retry with progressively richer padding until non-NaN."""
-    text = rec["text"]
+def _build_embedding_input(rec) -> str:
+    """Construct the contextually-enriched input that gets embedded.
+
+    Prepending title + summary + keywords gives short structured chunks
+    (ADRs, page descriptions) the keyword density they need to compete with
+    meta-summary chunks at retrieval time.
+    """
     meta = rec["metadata"]
     title = meta.get("title", "")
     summary = meta.get("summary", "")
-    keywords = " ".join(meta.get("keywords", []))
-    attempts = [
-        text,
-        f"{text}\n\n{title}",
-        f"{text}\n\n{summary} {keywords}",
-    ]
+    keywords = ", ".join(meta.get("keywords", []))
+    parents = " > ".join(meta.get("parent_headings", []))
+    header_lines = [title]
+    if parents:
+        header_lines.append(parents)
+    if summary:
+        header_lines.append(summary)
+    if keywords:
+        header_lines.append(f"Keywords: {keywords}")
+    return "\n".join(header_lines) + "\n\n" + rec["text"]
+
+
+def _embed_with_retry(oc, rec) -> list[float] | None:
+    """Embed text with retries. Ollama's bge-m3 occasionally emits NaN for very
+    short inputs; the contextual prefix usually prevents this, but keep
+    fallbacks as a safety net."""
+    primary = _build_embedding_input(rec)
+    attempts = [primary, primary + "\n\n[end]", rec["text"]]
     for prompt in attempts:
         try:
             resp = oc.embeddings(model=EMBED_MODEL, prompt=prompt)
