@@ -61,7 +61,7 @@ _retriever = HybridRetriever(
 )
 
 
-def _classify_error(exc: BaseException) -> dict:
+def _classify_error(exc: Exception) -> dict:
     """Map a retrieval exception to a structured MCP-friendly error dict."""
     msg = str(exc)
     cls = type(exc).__name__
