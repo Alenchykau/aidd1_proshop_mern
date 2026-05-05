@@ -244,6 +244,120 @@ Tool call: `mcp__feature-flags__get_feature_info`
 - rollout_strategy: `full_release`
 - targeted_segments: `all`
 - dependencies_state: пусто (зависимостей нет)
+
+### End-to-end
+
+Связка двух MCP в одной задаче: «найди фичу `payment_stripe_v3` в документации, проверь её состояние, и если она `Disabled` с не-`Disabled` зависимостями — переведи в `Testing` с трафиком 25%, в конце процитируй документацию о назначении фичи».
+
+Ожидаемая цепочка по ТЗ: `search_project_docs` → `get_feature_info` → анализ зависимостей → `set_feature_state` → `adjust_traffic_rollout` → `get_feature_info` (подтверждение) → цитата.
+
+**Фактический результат: цепочка обрывается на шаге 2.** Фичи `payment_stripe_v3` не существует ни в `features.json`, ни в корпусе документации. `set_feature_state` / `adjust_traffic_rollout` НЕ вызывались — это корректное поведение (нечего переводить).
+
+---
+
+**Шаг 1. Поиск в документации (`project-docs` MCP).**
+
+Tool call: `mcp__project-docs__search_project_docs`
+Аргументы:
+```json
+{ "query": "payment_stripe_v3 feature dependencies", "top_k": 5 }
+```
+Top-5 результата (только `score` + путь):
+```
+0.0315  docs/project-data/features/payments.md         → PayPal Payment Button (Feature 2)
+0.0305  docs/project-data/feature-flags-spec.md        → features.json формат, optional fields
+0.0297  docs/project-data/feature-flags-spec.md        → каталог флагов, секция Payments
+0.0289  docs/project-data/runbooks/local-setup.md      → npm install, root deps
+0.0286  docs/project-data/runbooks/local-setup.md      → npm install --prefix frontend
+```
+Все score < 0.04 (для сравнения: точные попадания в M3 → шаг 4 показывали 0.55–0.66). Top-1 — PayPal-фича, не Stripe. Прямого совпадения по `payment_stripe_v3` нет.
+
+**Шаг 2. Чтение состояния флага (`feature-flags` MCP).**
+
+Tool call: `mcp__feature-flags__get_feature_info`
+Аргументы:
+```json
+{ "feature_name": "payment_stripe_v3" }
+```
+Ответ MCP:
+```json
+{ "error": "FEATURE_NOT_FOUND", "feature_name": "payment_stripe_v3" }
+```
+
+**Решение: цепочка прервана.** Нельзя анализировать зависимости несуществующего флага и нельзя вызывать `set_feature_state` — MCP вернёт `FEATURE_NOT_FOUND` и для записи. Никаких write-операций не совершено.
+
+---
+
+**Дополнительная диагностика (вне основной цепочки)** — проверить, что это не опечатка в имени, а реально отсутствующий флаг.
+
+Tool call: `mcp__project-docs__search_project_docs`
+Аргументы:
+```json
+{ "query": "Stripe payment integration v3", "top_k": 5 }
+```
+Top-3 (упрощённо):
+```
+0.0323  adrs/adr-004-paypal-vs-stripe.md  → "Migration Path" (как мигрировать на Stripe)
+0.0320  adrs/adr-004-paypal-vs-stripe.md  → "Current Assessment (April 2026)"
+0.0320  features.json                     → "Stripe as Alternative Payment Processor" (flag: stripe_alternative)
+```
+
+Tool call: `mcp__project-docs__search_project_docs`
+Аргументы:
+```json
+{ "query": "stripe_alternative feature flag", "top_k": 5 }
+```
+Top-1: `features.json#stripe_alternative` (score 0.0328) — **это и есть «реальный» Stripe-флаг в проекте**.
+
+Контрольный grep по `docs/` на литерал `payment_stripe_v3` — 0 совпадений. Имя в задаче — фиктивное / опечатка, реальный кандидат — `stripe_alternative`.
+
+Для полноты — состояние реального аналога:
+
+Tool call: `mcp__feature-flags__get_feature_info`
+Аргументы:
+```json
+{ "feature_name": "stripe_alternative" }
+```
+Ответ MCP:
+```json
+{
+  "feature_name": "stripe_alternative",
+  "name": "Stripe as Alternative Payment Processor",
+  "description": "Enables the Stripe payment method option that is currently commented out in PaymentScreen.js. Adds a Stripe checkout backend route to orderController and handles webhooks for async payment confirmation. Acts as a fallback when PayPal is unavailable and provides credit card tokenization independent of PayPal.",
+  "status": "Testing",
+  "traffic_percentage": 5,
+  "last_modified": "2026-04-05",
+  "targeted_segments": ["beta_users"],
+  "rollout_strategy": "canary",
+  "dependencies_state": []
+}
+```
+
+Даже если бы я подменил имя на `stripe_alternative`, условие задачи «status == Disabled» НЕ выполняется (`stripe_alternative` уже в `Testing` 5%). Никакой write-вызов тут не уместен — ни по фейковому имени, ни по угаданному реальному.
+
+---
+
+**Цитаты из документации о назначении Stripe-альтернативы** (раз `payment_stripe_v3` отсутствует, цитируем ближайший канон — описание `stripe_alternative` и ADR-004 «PayPal vs Stripe», `docs/project-data/adrs/adr-004-paypal-vs-stripe.md`):
+
+> **Acts as a fallback when PayPal is unavailable and provides credit card tokenization independent of PayPal.**
+> — `features.json#stripe_alternative`, поле `description`
+
+> **Stripe is now the team's preferred payment processor for new projects.** Key advantages over PayPal: Test mode is a faithful replica of production… The double-callback incident (i-001) would have been surfaced and verifiable in Stripe's test environment. Stripe Elements / Stripe Checkout — card entry inline within the application UI (no popup/redirect)… Idempotency keys are a first-class concept in Stripe's API, making idempotent payment flows natural to implement (the core issue in i-001).
+> — ADR-004, секция *Alternatives Considered → Stripe*
+
+> The PayPal integration is stable in production (since v2.1)… However, if this application were being started today or rebuilt, **Stripe would be the unambiguous choice** for its superior sandbox fidelity, API design, and webhook reliability.
+> — ADR-004, секция *Current Assessment (April 2026)*
+
+---
+
+**Итоговое состояние `payment_stripe_v3`: фича не существует, изменений в `features.json` не было.** Цепочка корректно остановилась на `FEATURE_NOT_FOUND` — это и есть желаемое поведение: MCP-сервер защищает от «случайных» write-операций по несуществующим именам, а агент не подменяет имя самостоятельно.
+
+**Замечания по работе MCP в связке:**
+
+- `project-docs` корректно НЕ нашёл `payment_stripe_v3` (max score 0.0315 — на порядок ниже типичных «попаданий» 0.55+ из M3 шага 4). Низкий top-1 score — сильный сигнал «этого нет», но порог не формализован, агент должен интерпретировать score сам.
+- `feature-flags` чисто отрабатывает FEATURE_NOT_FOUND и для read, и (как контракт обещает) для write — никаких побочных эффектов.
+- Связка работает: вектор-поиск даёт контекст («что такое фича X»), feature-flags даёт runtime-состояние. Они не дублируют друг друга — `get_feature_info` НЕ возвращает текст из документации, `search_project_docs` НЕ возвращает текущий `traffic_percentage`. Чтобы ответить на «что такое фича X и какое у неё состояние» — нужны оба.
+
 ## Task 3 — Step 2: Vector DB chunking
 
 - Local Qdrant (v1.17.1) installed at `D:\Soft\qdrant\` (no Docker).

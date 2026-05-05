@@ -91,6 +91,26 @@ Classic Redux (not RTK) with `redux-thunk`. `frontend/src/store.js` combines ~20
 
 Routing lives entirely in `frontend/src/App.js`. `/admin/*` routes are for admin-only screens (the backend enforces `admin`; the screens also guard via `userInfo.isAdmin`).
 
+## MCP servers
+
+Two project-local MCP servers are registered in `.mcp.json` (`project-docs`, `feature-flags`). Treat them as the primary interface for the concerns below — going around them with grep/Edit is slower, more expensive in tokens, and bypasses validation.
+
+### Product docs search (`project-docs` MCP)
+
+For any question about features, architecture, ADRs, runbooks, or incidents in `docs/` — **call `mcp__project-docs__search_project_docs` first**. It returns relevant chunks with metadata (file path, section, etc.) via vector search.
+
+- Only fall back to `Grep` + `Read` when vector search misses or you need the full file the chunk metadata pointed to.
+- Don't open-endedly grep `docs/` first — it's slow and burns tokens for results the MCP would have ranked.
+
+### Feature flags (`feature-flags` MCP)
+
+Source of truth is `docs/project-data/features.json`. **Never edit it via `Edit`/`Write`** — always go through the MCP, which validates dependencies, enforces the disabled-traffic lock, and stamps `last_modified`.
+
+- Status questions ("what's the status of `gift_message`?", "is `search_v2` on?") → `mcp__feature-flags__get_feature_info`. Don't read `features.json` directly.
+- State changes ("enable X", "move Y to Testing", "kill-switch Z") → `mcp__feature-flags__set_feature_state`.
+- Traffic ramps ("set traffic to 25%", canary steps) → `mcp__feature-flags__adjust_traffic_rollout`. Not `set_feature_state`.
+- "List all flags" — no `list_features` tool exists today; `Read docs/project-data/features.json` is acceptable for that one case. Per-flag details still go through `get_feature_info`.
+
 ## Conventions
 
 **Naming**
