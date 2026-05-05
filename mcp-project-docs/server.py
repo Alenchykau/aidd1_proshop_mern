@@ -64,7 +64,7 @@ our docs?" question. You MUST use this FIRST when the user asks about \
 product functionality.
 
 When NOT to call: Current state of feature flags — use the feature-flags \
-MCP get_feature_info / set_feature_state for that. General questions about \
+MCP get_feature_info for that. General questions about \
 React, MERN, Mongoose, JavaScript, etc. that are not about THIS product — \
 those belong to language/framework knowledge, not this corpus. Do not call \
 with empty queries.
@@ -133,7 +133,22 @@ def _classify_error(exc: Exception) -> dict:
 
     is_conn = _is_conn_chain(exc)
     if is_conn:
-        if "11434" in msg or "ollama" in low:
+        ollama_host_part = OLLAMA_HOST.split("://", 1)[-1]
+        qdrant_host_part = QDRANT_URL.split("://", 1)[-1]
+        is_ollama = (
+            "11434" in msg
+            or "ollama" in low
+            or (ollama_host_part and ollama_host_part in msg)
+        )
+        is_qdrant = qdrant_host_part and qdrant_host_part in msg
+        # Prefer explicit qdrant match over ollama defaults if both could fire
+        if is_qdrant and not is_ollama:
+            return {
+                "error": "QDRANT_UNAVAILABLE",
+                "message": msg,
+                "hint": f"ensure qdrant is running on {QDRANT_URL}",
+            }
+        if is_ollama:
             return {
                 "error": "OLLAMA_UNAVAILABLE",
                 "message": msg,
