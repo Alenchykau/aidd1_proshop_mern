@@ -156,7 +156,7 @@ def _classify_error(exc: Exception) -> dict:
     return {"error": "INTERNAL", "type": cls, "message": msg}
 
 
-def _search(query: str, top_k: int = 5):
+def _search(query: str, top_k: int = 5) -> list | dict:
     if not query or not query.strip():
         return {"error": "EMPTY_QUERY"}
     if not isinstance(top_k, int) or top_k < 1 or top_k > 50:
@@ -186,7 +186,7 @@ mcp = FastMCP("project-docs")
 
 
 @mcp.tool(description=TOOL_DESCRIPTION)
-def search_project_docs(query: str, top_k: int = 5):
+def search_project_docs(query: str, top_k: int = 5) -> list | dict:
     """See TOOL_DESCRIPTION for the full contract."""
     return _search(query, top_k)
 
