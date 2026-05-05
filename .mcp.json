@@ -7,6 +7,14 @@
         "mcp-feature-flags/dist/server.js"
       ],
       "env": {}
+    },
+    "project-docs": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "mcp-project-docs/server.py"
+      ],
+      "env": {}
     }
   }
 }
