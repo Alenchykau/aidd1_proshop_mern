@@ -31,7 +31,7 @@ def _make_snippet(text: str, max_len: int = SNIPPET_MAX) -> str:
     cut = collapsed.rfind(" ", 0, max_len - 1)
     if cut <= 0:
         cut = max_len - 1
-    return collapsed[:cut + 1] + "…"
+    return collapsed[:cut] + "…"
 
 
 def _format_chunk(score: float, chunk: dict) -> dict:
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     out = _format_chunk(0.1234567, fake_chunk)
     print(json.dumps(out, ensure_ascii=False))
     assert out["score"] == 0.123457
-    assert out["snippet"].startswith("Hello world ")
+    assert out["snippet"].startswith("Hello world")
     assert out["snippet"].endswith("…")
     assert out["parent_headings"] == ["A", "B"]
     print("ok")
