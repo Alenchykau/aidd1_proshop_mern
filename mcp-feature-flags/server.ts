@@ -6,7 +6,7 @@ import { readFile, writeFile, rename } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const FILE = resolve(dirname(fileURLToPath(import.meta.url)), "../../project-data/features.json");
+const FILE = resolve(dirname(fileURLToPath(import.meta.url)), "../../docs/project-data/features.json");
 const today = () => new Date().toISOString().slice(0, 10);
 const load = async (): Promise<Record<string, any>> => JSON.parse(await readFile(FILE, "utf8"));
 const save = async (data: Record<string, any>) => { const tmp = FILE + ".tmp"; await writeFile(tmp, JSON.stringify(data, null, 2)); await rename(tmp, FILE); };
