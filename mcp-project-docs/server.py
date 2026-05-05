@@ -23,6 +23,7 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 # Make scripts/ importable so we can reuse HybridRetriever as-is.
 sys.path.insert(0, str(REPO_ROOT))
 from scripts.rag_query import HybridRetriever  # noqa: E402
+from mcp.server.fastmcp import FastMCP  # noqa: E402
 
 _WHITESPACE_RE = re.compile(r"\s+")
 SNIPPET_MAX = 200
@@ -49,6 +50,45 @@ def _format_chunk(score: float, chunk: dict) -> dict:
         "snippet": _make_snippet(chunk.get("text", "")),
     }
 
+
+TOOL_DESCRIPTION = """\
+What: Hybrid (dense BGE-M3 + BM25 with Reciprocal Rank Fusion) retrieval \
+over the proshop_mern documentation corpus — architecture, ADRs, features, \
+runbooks, incidents, glossary, dev history. Returns top_k chunks with \
+provenance metadata.
+
+When to call: User asks about how the proshop_mern product works, why a \
+decision was made, what a feature does, where something is defined in the \
+docs, an incident or runbook lookup, or any "is there something about X in \
+our docs?" question. You MUST use this FIRST when the user asks about \
+product functionality.
+
+When NOT to call: Current state of feature flags — use the feature-flags \
+MCP get_feature_info / set_feature_state for that. General questions about \
+React, MERN, Mongoose, JavaScript, etc. that are not about THIS product — \
+those belong to language/framework knowledge, not this corpus. Do not call \
+with empty queries.
+
+Input: { query: string (free text, the user's question or keywords), \
+top_k: integer in [1, 50] (default 5) }
+
+Output on success: list[Chunk] where each Chunk has:
+  - source_file:     filename of the source markdown
+  - file_path:       repo-relative path to the source file
+  - title:           heading the chunk lives under
+  - parent_headings: list of breadcrumb headings (root -> leaf)
+  - score:           hybrid relevance score (higher = better)
+  - snippet:         first ~200 chars of chunk text
+
+Output on error: { error: "EMPTY_QUERY" | "INVALID_TOP_K" | \
+"QDRANT_UNAVAILABLE" | "OLLAMA_UNAVAILABLE" | "EMBED_MODEL_UNAVAILABLE" | \
+"INTERNAL", message?, hint?, ... }
+
+Examples:
+  1) search_project_docs({ query: "why MongoDB and not Postgres", top_k: 3 })
+  2) search_project_docs({ query: "how does the cart persist across reloads" })
+  3) search_project_docs({ query: "PayPal webhook failure runbook", top_k: 5 })
+"""
 
 # Module-level singleton — fail-fast at import if chunks file is missing or
 # unreadable. Qdrant/Ollama are NOT touched here (clients are lazy);
@@ -142,6 +182,15 @@ def _search(query: str, top_k: int = 5):
     return out
 
 
+mcp = FastMCP("project-docs")
+
+
+@mcp.tool(description=TOOL_DESCRIPTION)
+def search_project_docs(query: str, top_k: int = 5):
+    """See TOOL_DESCRIPTION for the full contract."""
+    return _search(query, top_k)
+
+
 def _selftest(query: str, top_k: int = 5) -> int:
     result = _search(query, top_k)
     print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -157,6 +206,4 @@ if __name__ == "__main__":
             print("error: top_k must be an integer", file=sys.stderr)
             sys.exit(1)
         sys.exit(_selftest(q, k))
-    # MCP server entry is added in Task 5.
-    print("error: server entry not wired yet (Task 5). Use --selftest for now.", file=sys.stderr)
-    sys.exit(2)
+    mcp.run()  # stdio transport by default
