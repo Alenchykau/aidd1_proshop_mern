@@ -61,6 +61,61 @@ _retriever = HybridRetriever(
 )
 
 
+def _classify_error(exc: BaseException) -> dict:
+    """Map a retrieval exception to a structured MCP-friendly error dict."""
+    msg = str(exc)
+    cls = type(exc).__name__
+    low = msg.lower()
+    cls_low = cls.lower()
+
+    # Walk the full cause/context chain to catch wrapper exceptions
+    # (e.g. qdrant_client wraps httpx.ConnectError in ResponseHandlingException).
+    def _is_conn_chain(e: BaseException) -> bool:
+        seen = set()
+        cur = e
+        while cur is not None and id(cur) not in seen:
+            seen.add(id(cur))
+            c = type(cur).__name__.lower()
+            m = str(cur).lower()
+            if (
+                "connecterror" in c
+                or "connectionrefused" in c
+                or "connection refused" in m
+                or "failed to connect" in m
+                or "name or service not known" in m
+                or "max retries exceeded" in m
+                or "winerror 10061" in m
+                or "winerror 10060" in m
+            ):
+                return True
+            cur = cur.__cause__ or cur.__context__
+        return False
+
+    is_conn = _is_conn_chain(exc)
+    if is_conn:
+        if "11434" in msg or "ollama" in low:
+            return {
+                "error": "OLLAMA_UNAVAILABLE",
+                "message": msg,
+                "hint": f"ensure ollama is running on {OLLAMA_HOST}",
+            }
+        return {
+            "error": "QDRANT_UNAVAILABLE",
+            "message": msg,
+            "hint": f"ensure qdrant is running on {QDRANT_URL}",
+        }
+
+    if "model" in low and ("not found" in low or "does not exist" in low or "pull" in low):
+        return {
+            "error": "EMBED_MODEL_UNAVAILABLE",
+            "model": "bge-m3",
+            "message": msg,
+            "hint": "run `ollama pull bge-m3`",
+        }
+
+    return {"error": "INTERNAL", "type": cls, "message": msg}
+
+
 def _search(query: str, top_k: int = 5):
     if not query or not query.strip():
         return {"error": "EMPTY_QUERY"}
@@ -71,9 +126,13 @@ def _search(query: str, top_k: int = 5):
             "message": "top_k must be an integer in [1, 50]",
         }
 
-    hits = _retriever.search(
-        query, top_k=top_k, mode="hybrid", group=None, source_file=None
-    )
+    try:
+        hits = _retriever.search(
+            query, top_k=top_k, mode="hybrid", group=None, source_file=None
+        )
+    except Exception as exc:
+        return _classify_error(exc)
+
     out = []
     for h in hits:
         chunk = _retriever._id_to_chunk.get(h["id"])
@@ -92,7 +151,11 @@ def _selftest(query: str, top_k: int = 5) -> int:
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "--selftest":
         q = sys.argv[2] if len(sys.argv) > 2 else ""
-        k = int(sys.argv[3]) if len(sys.argv) > 3 else 5
+        try:
+            k = int(sys.argv[3]) if len(sys.argv) > 3 else 5
+        except ValueError:
+            print("error: top_k must be an integer", file=sys.stderr)
+            sys.exit(1)
         sys.exit(_selftest(q, k))
     # MCP server entry is added in Task 5.
     print("error: server entry not wired yet (Task 5). Use --selftest for now.", file=sys.stderr)
