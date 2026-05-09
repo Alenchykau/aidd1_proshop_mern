@@ -94,9 +94,9 @@ Same insertion in the `@media (prefers-color-scheme: dark)` block:
 - [ ] **Step 7: Verify file is consistent**
 
 Run: `grep -n -- "--info" DESIGN.md`
-Expected: 7 hits — 2 table rows (dark + light), 2 contrast bullets, 3 CSS blocks (`:root`, `.dark`, `prefers-color-scheme`).
+Expected: 5 hits — 2 table rows (dark + light) and 3 CSS blocks (`:root`, `.dark`, `prefers-color-scheme`). The two contrast bullets reference `#5DA9FF` / `#1E6FBA` directly, not the token name, so they are not matched by this grep.
 
-If the count is wrong, re-check the steps above for missed insertions.
+If the count is wrong, re-check the steps above for missed table-row or CSS-variable insertions.
 
 - [ ] **Step 8: Commit**
 
@@ -319,6 +319,8 @@ Append these blocks to the end of `frontend/src/index.css` (do **not** remove or
   }
 }
 ```
+
+> **Implementation note:** the `@import` line must be hoisted to line 1 of the file before commit. CSS spec requires `@import` to precede all other rules; appending it after the existing carousel rules causes browsers to ignore the font load.
 
 - [ ] **Step 3: Verify other screens still render**
 
@@ -549,7 +551,7 @@ Create `frontend/src/screens/FeatureListScreen.css`:
   appearance: none;
   flex: 1;
   height: 4px;
-  background: var(--card-alt);
+  background: color-mix(in srgb, var(--foreground) 15%, transparent);
   border-radius: 9999px;
   outline: none;
 }
@@ -603,7 +605,7 @@ Create `frontend/src/screens/FeatureListScreen.css`:
 .feature-dashboard .fd-switch-track {
   position: absolute;
   inset: 0;
-  background: var(--card-alt);
+  background: color-mix(in srgb, var(--foreground) 15%, transparent);
   border-radius: 9999px;
   transition: background-color 150ms ease, box-shadow 150ms ease;
   cursor: pointer;
@@ -620,7 +622,7 @@ Create `frontend/src/screens/FeatureListScreen.css`:
   transition: transform 150ms ease, background-color 150ms ease;
 }
 .feature-dashboard .fd-switch input:checked + .fd-switch-track {
-  background: color-mix(in srgb, var(--primary) 30%, var(--card-alt));
+  background: color-mix(in srgb, var(--primary) 40%, transparent);
 }
 .feature-dashboard .fd-switch input:checked + .fd-switch-track::before {
   transform: translateX(16px);

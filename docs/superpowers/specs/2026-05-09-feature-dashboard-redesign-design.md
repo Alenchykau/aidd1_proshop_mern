@@ -253,13 +253,15 @@ The cell becomes a flex row:
 </div>
 ```
 
+> **Note:** Tracks use a translucent foreground overlay rather than `var(--card-alt)` so they remain visible when the row hover state changes the row background to `var(--card-alt)`.
+
 ```
 .slider-cell { display: flex; align-items: center; gap: 10px; min-width: 180px; }
 
 .slider {
   -webkit-appearance: none; appearance: none;
   flex: 1; height: 4px;
-  background: var(--card-alt);
+  background: color-mix(in srgb, var(--foreground) 15%, transparent);
   border-radius: 9999px;
   outline: none;
 }
@@ -288,7 +290,7 @@ The cell becomes a flex row:
   font: 'DM Mono' 500, 13px;
   font-feature-settings: "tnum" 1;
   color: var(--primary);
-  width: 38px;
+  width: 40px;
   text-align: right;
 }
 ```
@@ -307,7 +309,7 @@ The Bootstrap `<Form.Check type="switch">` is replaced by a styled
 .switch input { opacity: 0; width: 0; height: 0; }
 .switch-track {
   position: absolute; inset: 0;
-  background: var(--card-alt);
+  background: color-mix(in srgb, var(--foreground) 15%, transparent);
   border-radius: 9999px;
   transition: background-color 150ms ease;
   cursor: pointer;
@@ -321,7 +323,7 @@ The Bootstrap `<Form.Check type="switch">` is replaced by a styled
   transition: transform 150ms ease, background-color 150ms ease;
 }
 .switch input:checked + .switch-track {
-  background: color-mix(in srgb, var(--primary) 30%, var(--card-alt));
+  background: color-mix(in srgb, var(--primary) 40%, transparent);
 }
 .switch input:checked + .switch-track::before {
   transform: translateX(16px);
