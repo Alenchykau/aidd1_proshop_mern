@@ -196,7 +196,7 @@
   appearance: none;
   flex: 1;
   height: 4px;
-  background: var(--card-alt);
+  background: color-mix(in srgb, var(--foreground) 15%, transparent);
   border-radius: 9999px;
   outline: none;
 }
@@ -250,7 +250,7 @@
 .feature-dashboard .fd-switch-track {
   position: absolute;
   inset: 0;
-  background: var(--card-alt);
+  background: color-mix(in srgb, var(--foreground) 15%, transparent);
   border-radius: 9999px;
   transition: background-color 150ms ease, box-shadow 150ms ease;
   cursor: pointer;
@@ -267,7 +267,7 @@
   transition: transform 150ms ease, background-color 150ms ease;
 }
 .feature-dashboard .fd-switch input:checked + .fd-switch-track {
-  background: color-mix(in srgb, var(--primary) 30%, var(--card-alt));
+  background: color-mix(in srgb, var(--primary) 40%, transparent);
 }
 .feature-dashboard .fd-switch input:checked + .fd-switch-track::before {
   transform: translateX(16px);
