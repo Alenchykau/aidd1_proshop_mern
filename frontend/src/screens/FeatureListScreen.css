@@ -5,9 +5,6 @@
   font-family: 'Manrope', system-ui, sans-serif;
   color: var(--foreground);
   background: var(--background);
-  /* Negative margin counteracts the global .container padding of the parent
-     so the dashboard background fills the viewport edge-to-edge inside the
-     content area. Adjust if needed when the layout chrome changes. */
 }
 
 /* ---------- Header ---------- */
