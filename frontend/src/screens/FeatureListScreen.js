@@ -8,10 +8,17 @@ import {
   updateFeatureTraffic,
 } from '../actions/featureActions'
 
-const STATUS_VARIANT = {
-  Enabled: 'success',
-  Testing: 'info',
-  Disabled: 'dark',
+// The project ships a custom Bootswatch theme that redefines --primary (black) and
+// --secondary (white), so the natural Bootstrap variants don't read as the spec's
+// "blue / grey" badges. We pick info for Testing and override Disabled inline to a
+// light grey since no built-in variant in this theme renders that way.
+const STATUS_BADGE = {
+  Enabled: { variant: 'success' },
+  Testing: { variant: 'info' },
+  Disabled: {
+    variant: 'light',
+    style: { backgroundColor: '#adb5bd', color: '#212529' },
+  },
 }
 
 const SkeletonRow = () => (
@@ -58,7 +65,7 @@ const FeatureRow = ({ feature }) => {
     <tr>
       <td>{feature.name}</td>
       <td>
-        <Badge variant={STATUS_VARIANT[feature.status]}>{feature.status}</Badge>
+        <Badge {...STATUS_BADGE[feature.status]}>{feature.status}</Badge>
       </td>
       <td>
         <Form.Control
