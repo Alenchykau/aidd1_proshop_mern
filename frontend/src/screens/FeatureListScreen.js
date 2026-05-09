@@ -10,8 +10,8 @@ import {
 
 const STATUS_VARIANT = {
   Enabled: 'success',
-  Testing: 'primary',
-  Disabled: 'secondary',
+  Testing: 'info',
+  Disabled: 'dark',
 }
 
 const SkeletonRow = () => (
