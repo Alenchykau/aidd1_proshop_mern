@@ -1,39 +1,43 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Table, Form, Badge, Row, Col } from 'react-bootstrap'
+import EmptyState from '../components/EmptyState'
 import Message from '../components/Message'
 import {
   listFeatures,
   toggleFeature,
   updateFeatureTraffic,
 } from '../actions/featureActions'
+import './FeatureListScreen.css'
 
-// The project ships a custom Bootswatch theme that redefines --primary (black) and
-// --secondary (white), so the natural Bootstrap variants don't read as the spec's
-// "blue / grey" badges. We pick info for Testing and override Disabled inline to a
-// light grey since no built-in variant in this theme renders that way.
-const STATUS_BADGE = {
-  Enabled: { variant: 'success' },
-  Testing: { variant: 'info' },
-  Disabled: {
-    variant: 'light',
-    style: { backgroundColor: '#adb5bd', color: '#212529' },
-  },
+const STATUS_BADGE_CLASS = {
+  Enabled: 'fd-badge fd-badge--enabled',
+  Testing: 'fd-badge fd-badge--testing',
+  Disabled: 'fd-badge fd-badge--disabled',
 }
+
+const SearchIcon = () => (
+  <svg
+    viewBox='0 0 24 24'
+    fill='none'
+    stroke='currentColor'
+    strokeWidth='1.5'
+    aria-hidden='true'
+  >
+    <circle cx='11' cy='11' r='7' />
+    <line x1='21' y1='21' x2='16.65' y2='16.65' />
+  </svg>
+)
 
 const SkeletonRow = () => (
   <tr>
-    {[0, 1, 2, 3, 4].map((i) => (
+    <td>
+      <span className='fd-skeleton-cell' />
+      <br />
+      <span className='fd-skeleton-cell' style={{ width: '40%', marginTop: 4 }} />
+    </td>
+    {[0, 1, 2, 3].map((i) => (
       <td key={i}>
-        <span
-          style={{
-            display: 'inline-block',
-            width: '80%',
-            height: '1rem',
-            backgroundColor: '#e9ecef',
-            borderRadius: '0.25rem',
-          }}
-        />
+        <span className='fd-skeleton-cell' />
       </td>
     ))}
   </tr>
@@ -63,30 +67,42 @@ const FeatureRow = ({ feature }) => {
 
   return (
     <tr>
-      <td>{feature.name}</td>
       <td>
-        <Badge {...STATUS_BADGE[feature.status]}>{feature.status}</Badge>
+        <span className='fd-feature-name'>{feature.name}</span>
+        <span className='fd-feature-key'>{feature.key}</span>
       </td>
       <td>
-        <Form.Control
-          type='range'
-          min={0}
-          max={100}
-          value={localTraffic}
-          onChange={handleSlider}
-          aria-label={`Traffic percentage for ${feature.name}`}
-        />
-        <span aria-live='polite'>{localTraffic}%</span>
+        <span className={STATUS_BADGE_CLASS[feature.status]}>
+          {feature.status}
+        </span>
       </td>
-      <td>{feature.last_modified}</td>
       <td>
-        <Form.Check
-          type='switch'
-          id={`toggle-${feature.key}`}
-          label={`Enable ${feature.name}`}
-          checked={feature.status === 'Enabled'}
-          onChange={handleToggle}
-        />
+        <div className='fd-slider-cell'>
+          <input
+            type='range'
+            className='fd-slider'
+            min={0}
+            max={100}
+            value={localTraffic}
+            onChange={handleSlider}
+            aria-label={`Traffic percentage for ${feature.name}`}
+          />
+          <span className='fd-slider-value' aria-live='polite'>
+            {localTraffic}%
+          </span>
+        </div>
+      </td>
+      <td className='fd-mono'>{feature.last_modified}</td>
+      <td className='fd-toggle-cell'>
+        <label className='fd-switch'>
+          <input
+            type='checkbox'
+            checked={feature.status === 'Enabled'}
+            onChange={handleToggle}
+            aria-label={`Enable ${feature.name}`}
+          />
+          <span className='fd-switch-track' />
+        </label>
       </td>
     </tr>
   )
@@ -121,69 +137,89 @@ const FeatureListScreen = ({ history }) => {
       .filter((f) => statusFilter === 'All' || f.status === statusFilter)
   }, [features, keyword, statusFilter])
 
-  const renderBody = () => {
-    if (loading) {
-      return [0, 1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)
-    }
-    if (filtered.length === 0) {
-      return null
-    }
-    return filtered.map((f) => <FeatureRow key={f.key} feature={f} />)
-  }
+  const totalCount = (features || []).length
+  const showFilteredEmpty =
+    !loading && !error && filtered.length === 0 && totalCount > 0
+  const showInventoryEmpty =
+    !loading && !error && totalCount === 0
+  const showTable = !showFilteredEmpty && !showInventoryEmpty
 
   return (
-    <>
-      <h1>Feature Dashboard</h1>
-      <Row className='mb-3'>
-        <Col md={8}>
-          <Form.Control
-            type='text'
-            placeholder='Search by name...'
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            aria-label='Search features by name'
-          />
-        </Col>
-        <Col md={4}>
-          <Form.Control
-            as='select'
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label='Filter by status'
-          >
-            <option value='All'>All</option>
-            <option value='Enabled'>Enabled</option>
-            <option value='Testing'>Testing</option>
-            <option value='Disabled'>Disabled</option>
-          </Form.Control>
-        </Col>
-      </Row>
+    <div className='feature-dashboard'>
+      <div className='fd-header'>
+        <div>
+          <h1>Feature Dashboard</h1>
+          <p className='fd-subtitle'>
+            Manage feature flag rollouts and traffic ramps.
+          </p>
+        </div>
+        <div className='fd-count-chip'>
+          <span className='fd-dot' />
+          {totalCount} FLAGS
+        </div>
+      </div>
+
+      <div className='fd-filters'>
+        <input
+          type='text'
+          className='fd-input fd-search'
+          placeholder='Search by name...'
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          aria-label='Search features by name'
+        />
+        <select
+          className='fd-input fd-select'
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label='Filter by status'
+        >
+          <option value='All'>All</option>
+          <option value='Enabled'>Enabled</option>
+          <option value='Testing'>Testing</option>
+          <option value='Disabled'>Disabled</option>
+        </select>
+      </div>
 
       {error ? (
         <Message variant='danger'>{error}</Message>
-      ) : (
-        <>
-          <Table striped bordered hover responsive className='table-sm'>
+      ) : showTable ? (
+        <div className='fd-table-wrap'>
+          <table className='fd-table'>
             <thead>
               <tr>
-                <th>NAME</th>
-                <th>STATUS</th>
-                <th>TRAFFIC %</th>
-                <th>LAST MODIFIED</th>
-                <th>TOGGLE</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Traffic %</th>
+                <th>Last modified</th>
+                <th className='fd-th-right'>Toggle</th>
               </tr>
             </thead>
-            <tbody>{renderBody()}</tbody>
-          </Table>
-          {!loading && filtered.length === 0 && (features || []).length > 0 && (
-            <Message variant='info'>No features match your filters.</Message>
-          )}
-          {!loading && (features || []).length === 0 && !error && (
-            <Message variant='info'>No feature flags found.</Message>
-          )}
-        </>
+            <tbody>
+              {loading
+                ? [0, 1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)
+                : filtered.map((f) => <FeatureRow key={f.key} feature={f} />)}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+
+      {showFilteredEmpty && (
+        <EmptyState
+          icon={<SearchIcon />}
+          heading='No features match your filters.'
+          subtitle='Try a different keyword or clear the status filter.'
+        />
       )}
-    </>
+
+      {showInventoryEmpty && (
+        <EmptyState
+          icon={<SearchIcon />}
+          heading='No feature flags yet.'
+          subtitle='Once features are seeded, they appear here.'
+        />
+      )}
+    </div>
   )
 }
 
