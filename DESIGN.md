@@ -68,6 +68,8 @@ Semantic roles only — components reference role names, not raw hex.
 
 **Dark mode strategy:** CSS variables only. `.dark` class on `<html>` swaps `:root` values. Initial value derived from `prefers-color-scheme` and persisted via `localStorage` toggle in header. **Never use `dark:bg-gray-900` hardcodes.**
 
+**Note on Bootswatch shadowing:** The current Bootswatch theme also defines `--primary` and `--info` at `:root`. Our values intentionally override them. Bootswatch v4 inlines its colors into compiled rules and does not call `var(--primary)`, so today this shadowing is inert. If Bootstrap is ever upgraded to v5+ (which uses CSS-variable-driven theming) or a third-party react-bootstrap-compatible component starts reading these tokens, expect a forced retheme — at that point either pick distinct token names or re-base Bootstrap on the same palette.
+
 ---
 
 ## 2. Typography
@@ -472,7 +474,7 @@ These rules close gaps that token-level decisions alone do not cover. Every guar
 
 ### Visual style
 - **NO gradients** on backgrounds, buttons, or hero blocks. Solid colors only, drawn from the tokens in Section 1. Single exception: skeleton shimmer animation.
-- **NO heavy borders.** 1px maximum, color `var(--border)` or `color-mix` with transparency. Forbidden: `border: 2px+`, double borders, hard black outlines.
+- **NO heavy borders.** 1px maximum, color `var(--border)` or `color-mix` with transparency. Forbidden: `border: 2px+`, double borders, hard black outlines. **Exception:** small interactive controls (≤ 16×16px, e.g., slider thumbs, custom switch knobs) may use a 2px halo border drawn from the surrounding surface color (`var(--card)` / `var(--background)`) to lift the control off its track. The halo is a structural lift, not decoration.
 - **shadcn/ui MUST be customized** (when migrated). Never ship default slate / zinc / gray. Theme is generated from the tokens here (TweakCN.com or hand-mapped) and pasted into `globals.css`.
 
 ### UX-first
