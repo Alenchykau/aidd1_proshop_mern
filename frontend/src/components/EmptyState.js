@@ -3,8 +3,8 @@ import './EmptyState.css'
 
 const EmptyState = ({ icon, heading, subtitle }) => {
   return (
-    <div className='empty'>
-      {icon ? <div className='empty-icon'>{icon}</div> : null}
+    <div className='empty-state'>
+      {icon ? <div className='empty-state-icon'>{icon}</div> : null}
       <h3>{heading}</h3>
       <p>{subtitle}</p>
     </div>
