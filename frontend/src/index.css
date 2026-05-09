@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
 main {
   min-height: 80vh;
 }
@@ -60,8 +62,6 @@ h2 {
    are NOT applied as a body default — each redesigned screen opts in via its
    own scope class so legacy screens keep their current Bootstrap fonts.
    =========================================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
 :root {
   --background:   #FAFAFA;
