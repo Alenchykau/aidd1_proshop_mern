@@ -31,6 +31,9 @@ claude_sessions/
 # Transient RAG pipeline outputs
 tmp/
 
+# Brainstorm visual companion artifacts
+.superpowers/
+
 # Python venv and cache
 .venv-rag/
 __pycache__/

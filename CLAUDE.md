@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Design rules: see ./DESIGN.md
+
 ## Commands
 
 Dependencies are installed in two places (root + frontend):
