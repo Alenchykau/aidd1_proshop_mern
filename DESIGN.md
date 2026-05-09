@@ -35,6 +35,7 @@ Semantic roles only — components reference role names, not raw hex.
 | `--muted`        | `#999999`  | secondary text, hints (small text only) |
 | `--accent`       | `#C6FF3D`  | == primary in this system             |
 | `--destructive`  | `#FF6B6B`  | errors, destructive actions           |
+| `--info`         | `#5DA9FF`  | informational / in-progress status      |
 | `--border`       | `#3A3A3A`  | dividers, subtle outlines             |
 | `--ring`         | `#C6FF3D`  | focus ring                            |
 
@@ -51,6 +52,7 @@ Semantic roles only — components reference role names, not raw hex.
 | `--muted`        | `#666666`  |
 | `--accent`       | `#4A7000`  |
 | `--destructive`  | `#D63838`  |
+| `--info`         | `#1E6FBA`  |
 | `--border`       | `#E0E0E0`  |
 | `--ring`         | `#4A7000`  |
 
@@ -61,6 +63,8 @@ Semantic roles only — components reference role names, not raw hex.
 - `#C6FF3D` on `#242424` = **13.4:1** (AAA)
 - `#999999` on `#242424` = **4.6:1** (AA — small text only, never body)
 - `#0A0A0A` on `#C6FF3D` = **14:1** (AAA)
+- `#5DA9FF` on `#242424` = **6.5:1** (AA — used for Testing-status badge)
+- `#1E6FBA` on `#FFFFFF` = **4.7:1** (AA)
 
 **Dark mode strategy:** CSS variables only. `.dark` class on `<html>` swaps `:root` values. Initial value derived from `prefers-color-scheme` and persisted via `localStorage` toggle in header. **Never use `dark:bg-gray-900` hardcodes.**
 
@@ -393,6 +397,7 @@ CSS variables setup in `frontend/src/index.css`:
   --muted:        #666666;
   --accent:       #4A7000;
   --destructive:  #D63838;
+  --info:         #1E6FBA;
   --border:       #E0E0E0;
   --ring:         #4A7000;
 
@@ -425,6 +430,7 @@ CSS variables setup in `frontend/src/index.css`:
   --muted:        #999999;
   --accent:       #C6FF3D;
   --destructive:  #FF6B6B;
+  --info:         #5DA9FF;
   --border:       #3A3A3A;
   --ring:         #C6FF3D;
 
@@ -444,6 +450,7 @@ CSS variables setup in `frontend/src/index.css`:
     --muted:        #999999;
     --accent:       #C6FF3D;
     --destructive:  #FF6B6B;
+    --info:         #5DA9FF;
     --border:       #3A3A3A;
     --ring:         #C6FF3D;
   }
