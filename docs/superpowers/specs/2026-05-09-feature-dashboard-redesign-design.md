@@ -369,7 +369,7 @@ from this screen. Visually it is a single-card layout matching the
 table-wrap radius and border:
 
 ```
-<div class="empty">
+<div class="empty-state">
   <svg .../>                           <!-- 48px stroke-only icon -->
   <h3>{heading}</h3>
   <p>{subtitle}</p>
@@ -377,16 +377,16 @@ table-wrap radius and border:
 ```
 
 ```
-.empty {
+.empty-state {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 48px 24px;
   text-align: center;
 }
-.empty-icon { width: 48px; height: 48px; margin: 0 auto 16px; color: var(--muted); opacity: 0.5; }
-.empty h3 { margin: 0 0 4px 0; font: Manrope 600, 17px; }
-.empty p  { margin: 0; font: Manrope 400, 13px; color: var(--muted); }
+.empty-state-icon { width: 48px; height: 48px; margin: 0 auto 16px; color: var(--muted); opacity: 0.5; }
+.empty-state h3 { margin: 0 0 4px 0; font: Manrope 600, 17px; }
+.empty-state p  { margin: 0; font: Manrope 400, 13px; color: var(--muted); }
 ```
 
 Two empty states this screen renders:
@@ -408,8 +408,8 @@ The error case (`error` truthy) keeps the existing `<Message variant='danger'>{e
 | `frontend/src/index.css`                                            | **Append** (don't replace) — add the token block from DESIGN.md §10 (`:root` light defaults, `@media (prefers-color-scheme: dark)` overrides) and the Google-Fonts `@import` for Manrope + DM Mono. Existing global h1/h2/h3 and carousel rules stay untouched (other screens depend on them). |
 | `frontend/src/screens/FeatureListScreen.js`                         | Replace `<Table>`, `<Form.Control>`, `<Badge>`, `<Form.Check>` JSX with semantic markup using new class names; remove `STATUS_BADGE` style override map |
 | `frontend/src/screens/FeatureListScreen.css` (new)                  | Page-scoped CSS for header / filters / table-wrap / badge / slider / switch / skeleton / empty                         |
-| `frontend/src/components/EmptyState.js` (new)                       | Small presentational component: `({ icon, heading, subtitle, action }) => <div class="empty">...</div>`                |
-| `frontend/src/components/EmptyState.css` (new)                      | Styles for `.empty` / `.empty-icon`                                                                                     |
+| `frontend/src/components/EmptyState.js` (new)                       | Small presentational component: `({ icon, heading, subtitle, action }) => <div class="empty-state">...</div>`          |
+| `frontend/src/components/EmptyState.css` (new)                      | Styles for `.empty-state` / `.empty-state-icon`                                                                         |
 | `frontend/src/screens/FeatureListScreen.test.js`                    | Adjust assertions that hit Bootstrap class names (`badge-success`, `form-check-input`) to query by role / accessible name instead |
 
 **Theme selection** for this PR uses `@media (prefers-color-scheme: dark)`

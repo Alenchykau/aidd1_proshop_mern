@@ -21,7 +21,7 @@
 | File | Responsibility |
 |---|---|
 | `frontend/src/components/EmptyState.js` | Reusable presentational component: icon + heading + subtitle + optional CTA |
-| `frontend/src/components/EmptyState.css` | Styles for `.empty` / `.empty-icon` (matches DESIGN.md §6 empty state spec) |
+| `frontend/src/components/EmptyState.css` | Styles for `.empty-state` / `.empty-state-icon` (matches DESIGN.md §6 empty state spec) |
 | `frontend/src/components/EmptyState.test.js` | Unit test for EmptyState rendering |
 | `frontend/src/screens/FeatureListScreen.css` | All page-scoped styles for the dashboard: header, filters, table-wrap, badge, slider, switch, skeleton |
 
@@ -164,8 +164,8 @@ import './EmptyState.css'
 
 const EmptyState = ({ icon, heading, subtitle }) => {
   return (
-    <div className='empty'>
-      {icon ? <div className='empty-icon'>{icon}</div> : null}
+    <div className='empty-state'>
+      {icon ? <div className='empty-state-icon'>{icon}</div> : null}
       <h3>{heading}</h3>
       <p>{subtitle}</p>
     </div>
@@ -180,7 +180,7 @@ export default EmptyState
 Create `frontend/src/components/EmptyState.css`:
 
 ```css
-.empty {
+.empty-state {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -188,7 +188,7 @@ Create `frontend/src/components/EmptyState.css`:
   text-align: center;
 }
 
-.empty-icon {
+.empty-state-icon {
   width: 48px;
   height: 48px;
   margin: 0 auto 16px;
@@ -199,7 +199,7 @@ Create `frontend/src/components/EmptyState.css`:
   justify-content: center;
 }
 
-.empty-icon svg {
+.empty-state-icon svg {
   width: 100%;
   height: 100%;
   stroke: currentColor;
@@ -207,7 +207,7 @@ Create `frontend/src/components/EmptyState.css`:
   stroke-width: 1.5;
 }
 
-.empty h3 {
+.empty-state h3 {
   margin: 0 0 4px 0;
   font-family: 'Manrope', system-ui, sans-serif;
   font-size: 17px;
@@ -217,7 +217,7 @@ Create `frontend/src/components/EmptyState.css`:
   padding: 0;
 }
 
-.empty p {
+.empty-state p {
   margin: 0;
   font-family: 'Manrope', system-ui, sans-serif;
   font-size: 13px;
