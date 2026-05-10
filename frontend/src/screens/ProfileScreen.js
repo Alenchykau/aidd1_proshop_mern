@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react'
-import { Table, Form, Button, Row, Col } from 'react-bootstrap'
-import { LinkContainer } from 'react-router-bootstrap'
+import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import Message from '../components/Message'
 import Loader from '../components/Loader'
+import EmptyState from '../components/EmptyState'
+import FormCard from '../components/ui/FormCard'
+import FormField from '../components/ui/FormField'
+import Button from '../components/ui/Button'
+import DataTable from '../components/ui/DataTable'
+import Badge from '../components/ui/Badge'
 import { getUserDetails, updateUserProfile } from '../actions/userActions'
 import { listMyOrders } from '../actions/orderActions'
 import { USER_UPDATE_PROFILE_RESET } from '../constants/userConstants'
+import './ProfileScreen.css'
 
-const ProfileScreen = ({ location, history }) => {
+const ProfileScreen = ({ history }) => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -49,121 +55,102 @@ const ProfileScreen = ({ location, history }) => {
     if (password !== confirmPassword) {
       setMessage('Passwords do not match')
     } else {
+      setMessage(null)
       dispatch(updateUserProfile({ id: user._id, name, email, password }))
     }
   }
 
+  const orderColumns = [
+    { key: 'id',         header: 'ID',        mono: true,
+      render: (o) => o._id },
+    { key: 'createdAt',  header: 'Date',      mono: true,
+      render: (o) => o.createdAt.substring(0, 10) },
+    { key: 'totalPrice', header: 'Total',     mono: true, align: 'right',
+      render: (o) => `$${o.totalPrice}` },
+    { key: 'isPaid',     header: 'Paid',      align: 'center',
+      render: (o) => o.isPaid
+        ? <Badge variant='primary'>{o.paidAt.substring(0, 10)}</Badge>
+        : <Badge variant='danger'>NO</Badge> },
+    { key: 'isDelivered', header: 'Delivered', align: 'center',
+      render: (o) => o.isDelivered
+        ? <Badge variant='primary'>{o.deliveredAt.substring(0, 10)}</Badge>
+        : <Badge variant='danger'>NO</Badge> },
+    { key: 'actions',    header: '',          align: 'right',
+      render: (o) => (
+        <Link to={`/order/${o._id}`} className='ui-btn ui-btn--secondary ui-btn--sm'>
+          Details
+        </Link>
+      ) },
+  ]
+
   return (
-    <Row>
-      <Col md={3}>
-        <h2>User Profile</h2>
-        {message && <Message variant='danger'>{message}</Message>}
-        {}
-        {success && <Message variant='success'>Profile Updated</Message>}
-        {loading ? (
-          <Loader />
-        ) : error ? (
-          <Message variant='danger'>{error}</Message>
-        ) : (
-          <Form onSubmit={submitHandler}>
-            <Form.Group controlId='name'>
-              <Form.Label>Name</Form.Label>
-              <Form.Control
-                type='name'
-                placeholder='Enter name'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+    <div className='profile-page'>
+      <h1 className='profile-page__title'>User Profile</h1>
 
-            <Form.Group controlId='email'>
-              <Form.Label>Email Address</Form.Label>
-              <Form.Control
-                type='email'
-                placeholder='Enter email'
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+      {message && <Message variant='danger'>{message}</Message>}
+      {success && <Message variant='success'>Profile Updated</Message>}
 
-            <Form.Group controlId='password'>
-              <Form.Label>Password</Form.Label>
-              <Form.Control
-                type='password'
-                placeholder='Enter password'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
-
-            <Form.Group controlId='confirmPassword'>
-              <Form.Label>Confirm Password</Form.Label>
-              <Form.Control
-                type='password'
-                placeholder='Confirm password'
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
-
+      {loading ? (
+        <Loader />
+      ) : error ? (
+        <Message variant='danger'>{error}</Message>
+      ) : (
+        <FormCard title='Account Info'>
+          <form onSubmit={submitHandler}>
+            <FormField
+              id='name'
+              label='Name'
+              type='text'
+              placeholder='Enter name'
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <FormField
+              id='email'
+              label='Email Address'
+              type='email'
+              placeholder='Enter email'
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <FormField
+              id='password'
+              label='Password'
+              type='password'
+              placeholder='Enter password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <FormField
+              id='confirmPassword'
+              label='Confirm Password'
+              type='password'
+              placeholder='Confirm password'
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
             <Button type='submit' variant='primary'>
               Update
             </Button>
-          </Form>
-        )}
-      </Col>
-      <Col md={9}>
-        <h2>My Orders</h2>
-        {loadingOrders ? (
-          <Loader />
-        ) : errorOrders ? (
-          <Message variant='danger'>{errorOrders}</Message>
-        ) : (
-          <Table striped bordered hover responsive className='table-sm'>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>DATE</th>
-                <th>TOTAL</th>
-                <th>PAID</th>
-                <th>DELIVERED</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order._id}>
-                  <td>{order._id}</td>
-                  <td>{order.createdAt.substring(0, 10)}</td>
-                  <td>{order.totalPrice}</td>
-                  <td>
-                    {order.isPaid ? (
-                      order.paidAt.substring(0, 10)
-                    ) : (
-                      <i className='fas fa-times' style={{ color: 'red' }}></i>
-                    )}
-                  </td>
-                  <td>
-                    {order.isDelivered ? (
-                      order.deliveredAt.substring(0, 10)
-                    ) : (
-                      <i className='fas fa-times' style={{ color: 'red' }}></i>
-                    )}
-                  </td>
-                  <td>
-                    <LinkContainer to={`/order/${order._id}`}>
-                      <Button className='btn-sm' variant='light'>
-                        Details
-                      </Button>
-                    </LinkContainer>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
-      </Col>
-    </Row>
+          </form>
+        </FormCard>
+      )}
+
+      <h2 className='profile-page__orders-heading'>My Orders</h2>
+      {errorOrders && <Message variant='danger'>{errorOrders}</Message>}
+      <DataTable
+        columns={orderColumns}
+        rows={orders || []}
+        rowKey='_id'
+        loading={loadingOrders}
+        emptyState={
+          <EmptyState
+            heading='No orders yet'
+            subtitle='Place your first order'
+          />
+        }
+      />
+    </div>
   )
 }
 

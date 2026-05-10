@@ -1,0 +1,18 @@
+.profile-page { padding: var(--space-md) 0; }
+
+.profile-page__title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--foreground);
+}
+
+.profile-page__orders-heading {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin: var(--space-2xl) 0 var(--space-md) 0;
+  color: var(--foreground);
+}
