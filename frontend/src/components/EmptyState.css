@@ -41,3 +41,7 @@
   font-size: 13px;
   color: var(--muted);
 }
+
+.empty-state-cta {
+  margin-top: var(--space-md);
+}
