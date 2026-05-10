@@ -55,12 +55,10 @@ h2 {
 }
 
 /* ===========================================================================
-   Design System tokens (DESIGN.md). Light mode is default; OS dark preference
-   swaps to dark via the media query below. Manual theme toggle is a follow-up
-   and not wired here. Tokens are global so any redesigned screen can read them.
-   Fonts are imported globally so they can be referenced by component CSS, but
-   are NOT applied as a body default — each redesigned screen opts in via its
-   own scope class so legacy screens keep their current Bootstrap fonts.
+   Design System tokens (DESIGN.md §10).
+   Light is :root default. Dark applies via .dark class on <html>
+   (set by ThemeContext / anti-FOUC script). When the user has not chosen
+   (no data-theme attribute on <html>), prefers-color-scheme:dark fills in.
    =========================================================================== */
 
 :root {
@@ -96,8 +94,26 @@ h2 {
   --radius-full: 9999px;
 }
 
+.dark {
+  --background:   #242424;
+  --foreground:   #F2F2F2;
+  --card:         #2E2E2E;
+  --card-alt:     #383838;
+  --primary:      #C6FF3D;
+  --primary-fg:   #0A0A0A;
+  --muted:        #999999;
+  --accent:       #C6FF3D;
+  --destructive:  #FF6B6B;
+  --info:         #5DA9FF;
+  --border:       #3A3A3A;
+  --ring:         #C6FF3D;
+
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-modal:   0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --background:   #242424;
     --foreground:   #F2F2F2;
     --card:         #2E2E2E;
