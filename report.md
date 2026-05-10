@@ -506,11 +506,11 @@ Phase 2 — Auth/Checkout. Phase 3 — Admin.
 | 8  | Payment                    | /payment                           | PaymentScreen.js           | auth      | [x]               |
 | 9  | Place Order                | /placeorder                        | PlaceOrderScreen.js        | auth      | [x]               |
 | 10 | Order details              | /order/:id                         | OrderScreen.js             | auth      | [x]               |
-| 11 | Admin: Users list          | /admin/userlist                    | UserListScreen.js          | admin     | [ ]               |
-| 12 | Admin: User edit           | /admin/user/:id/edit               | UserEditScreen.js          | admin     | [ ]               |
-| 13 | Admin: Products list       | /admin/productlist                 | ProductListScreen.js       | admin     | [ ]               |
-| 14 | Admin: Product edit        | /admin/product/:id/edit            | ProductEditScreen.js       | admin     | [ ]               |
-| 15 | Admin: Orders list         | /admin/orderlist                   | OrderListScreen.js         | admin     | [ ]               |
+| 11 | Admin: Users list          | /admin/userlist                    | UserListScreen.js          | admin     | [x]               |
+| 12 | Admin: User edit           | /admin/user/:id/edit               | UserEditScreen.js          | admin     | [x]               |
+| 13 | Admin: Products list       | /admin/productlist                 | ProductListScreen.js       | admin     | [x]               |
+| 14 | Admin: Product edit        | /admin/product/:id/edit            | ProductEditScreen.js       | admin     | [x]               |
+| 15 | Admin: Orders list         | /admin/orderlist                   | OrderListScreen.js         | admin     | [x]               |
 | 16 | Admin: Feature Dashboard   | /admin/featuredashboard            | FeatureDashboardScreen.js  | admin     | [x] обязательно   |
 
 (Phase 0 — Foundation сама по себе галочки в таблице не ставит — это
