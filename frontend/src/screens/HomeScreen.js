@@ -7,12 +7,13 @@ import Message from '../components/Message'
 import Loader from '../components/Loader'
 import Paginate from '../components/Paginate'
 import ProductCarousel from '../components/ProductCarousel'
+import EmptyState from '../components/EmptyState'
 import Meta from '../components/Meta'
 import { listProducts } from '../actions/productActions'
+import './HomeScreen.css'
 
 const HomeScreen = ({ match }) => {
   const keyword = match.params.keyword
-
   const pageNumber = match.params.pageNumber || 1
 
   const dispatch = useDispatch()
@@ -25,20 +26,29 @@ const HomeScreen = ({ match }) => {
   }, [dispatch, keyword, pageNumber])
 
   return (
-    <>
+    <div className='home-page'>
       <Meta />
-      {!keyword ? (
-        <ProductCarousel />
-      ) : (
-        <Link to='/' className='btn btn-light'>
-          Go Back
+      {keyword ? (
+        <Link to='/' className='home-back ui-btn ui-btn--secondary ui-btn--sm'>
+          ‹ Go Back
         </Link>
+      ) : (
+        <div className='home-hero'>
+          <ProductCarousel />
+        </div>
       )}
-      <h1>Latest Products</h1>
+      <h2 className='home-section-title'>Latest Products</h2>
       {loading ? (
         <Loader />
       ) : error ? (
         <Message variant='danger'>{error}</Message>
+      ) : products.length === 0 ? (
+        <div className='home-empty'>
+          <EmptyState
+            heading='No products found'
+            subtitle={keyword ? 'Try a different search term' : 'Catalogue is empty'}
+          />
+        </div>
       ) : (
         <>
           <Row>
@@ -55,7 +65,7 @@ const HomeScreen = ({ match }) => {
           />
         </>
       )}
-    </>
+    </div>
   )
 }
 
