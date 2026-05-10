@@ -1,0 +1,22 @@
+.ui-card {
+  background: var(--card);
+  color: var(--foreground);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.ui-card.is-clickable {
+  cursor: pointer;
+}
+
+.ui-card.is-clickable:hover {
+  border-color: var(--primary);
+  background: var(--card-alt);
+}
+
+.ui-card.is-clickable:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
