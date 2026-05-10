@@ -99,3 +99,21 @@ h2 {
     --shadow-modal:   0 8px 32px rgba(0, 0, 0, 0.5);
   }
 }
+
+/* Global skeleton-shimmer utility for surface-level loading per DESIGN.md §7. */
+@keyframes app-skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.app-skeleton {
+  display: block;
+  background: linear-gradient(90deg, var(--card-alt) 0%, var(--border) 50%, var(--card-alt) 100%);
+  background-size: 200% 100%;
+  border-radius: var(--radius-sm);
+  animation: app-skeleton-shimmer 1.5s infinite linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-skeleton { animation: none; }
+}

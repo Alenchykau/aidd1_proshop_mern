@@ -24,3 +24,22 @@
 .home-empty {
   padding: var(--space-2xl) 0;
 }
+
+/* Surface loading skeleton (replaces full-screen Loader spinner) */
+.product-card-skeleton__image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+.product-card-skeleton__line {
+  height: 16px;
+  width: 80%;
+  margin-bottom: var(--space-xs);
+}
+.product-card-skeleton__line--short { width: 50%; }
+.product-card-skeleton__price {
+  height: 20px;
+  width: 30%;
+  margin-top: var(--space-sm);
+}

@@ -83,7 +83,19 @@ const OrderScreen = ({ match, history }) => {
     dispatch(deliverOrder(order))
   }
 
-  if (loading) return <Loader />
+  if (loading) return (
+    <>
+      <div className='app-skeleton order-skeleton__title' />
+      <div className='order-page'>
+        <div className='order-page__main'>
+          <div className='app-skeleton order-skeleton__card' />
+          <div className='app-skeleton order-skeleton__card' />
+          <div className='app-skeleton order-skeleton__card' />
+        </div>
+        <div className='app-skeleton order-skeleton__summary' />
+      </div>
+    </>
+  )
   if (error) return <Message variant='danger'>{error}</Message>
 
   return (

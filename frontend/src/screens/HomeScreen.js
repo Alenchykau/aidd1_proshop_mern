@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Row, Col } from 'react-bootstrap'
 import Product from '../components/Product'
 import Message from '../components/Message'
-import Loader from '../components/Loader'
 import Paginate from '../components/Paginate'
 import ProductCarousel from '../components/ProductCarousel'
 import EmptyState from '../components/EmptyState'
@@ -39,7 +38,18 @@ const HomeScreen = ({ match }) => {
       )}
       <h2 className='home-section-title'>Latest Products</h2>
       {loading ? (
-        <Loader />
+        <Row>
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <Col key={i} sm={12} md={6} lg={4} xl={3} className='mb-4'>
+              <div className='product-card'>
+                <div className='app-skeleton product-card-skeleton__image' />
+                <div className='app-skeleton product-card-skeleton__line' />
+                <div className='app-skeleton product-card-skeleton__line product-card-skeleton__line--short' />
+                <div className='app-skeleton product-card-skeleton__price' />
+              </div>
+            </Col>
+          ))}
+        </Row>
       ) : error ? (
         <Message variant='danger'>{error}</Message>
       ) : products.length === 0 ? (

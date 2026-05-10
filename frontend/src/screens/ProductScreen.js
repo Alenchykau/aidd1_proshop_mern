@@ -61,7 +61,16 @@ const ProductScreen = ({ history, match }) => {
         ‹ Go Back
       </Link>
       {loading ? (
-        <Loader />
+        <div className='product-page'>
+          <div><div className='app-skeleton product-skeleton__image' /></div>
+          <div>
+            <div className='app-skeleton product-skeleton__title' />
+            <div className='app-skeleton product-skeleton__line' />
+            <div className='app-skeleton product-skeleton__line' />
+            <div className='app-skeleton product-skeleton__line product-skeleton__line--short' />
+          </div>
+          <div className='app-skeleton product-skeleton__sidebar' />
+        </div>
       ) : error ? (
         <Message variant='danger'>{error}</Message>
       ) : (

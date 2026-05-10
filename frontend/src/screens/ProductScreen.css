@@ -120,3 +120,10 @@
 }
 .product-reviews__select   { width: 100%; }
 .product-reviews__textarea { width: 100%; font-family: inherit; }
+
+/* Surface loading skeleton (replaces full-screen Loader spinner) */
+.product-skeleton__image  { width: 100%; aspect-ratio: 1 / 1; border-radius: var(--radius-lg); }
+.product-skeleton__title  { height: 28px; width: 70%; margin-bottom: var(--space-sm); }
+.product-skeleton__line   { height: 14px; width: 90%; margin-bottom: var(--space-xs); }
+.product-skeleton__line--short { width: 60%; }
+.product-skeleton__sidebar { height: 280px; border-radius: var(--radius-lg); }
