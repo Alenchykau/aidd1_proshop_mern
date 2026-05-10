@@ -4,12 +4,17 @@
   overflow: hidden;
 }
 
-.product-carousel__link,
-.product-carousel__link:hover,
-.product-carousel__link:focus {
+.product-carousel__link {
   display: block;
   text-decoration: none;
   color: var(--foreground);
+}
+.product-carousel__link:hover,
+.product-carousel__link:focus {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-color: var(--foreground);
+  text-underline-offset: 3px;
 }
 
 .product-carousel__image-wrap {
