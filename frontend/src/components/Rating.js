@@ -9,7 +9,7 @@ const Rating = ({ value, text }) => {
   }
 
   return (
-    <div className='rating'>
+    <div className='rating' role='img' aria-label={`${value} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((threshold) => (
         <span key={threshold}>
           <i className={star(threshold)} aria-hidden='true' />

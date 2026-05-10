@@ -35,7 +35,7 @@ const CartScreen = ({ match, location, history }) => {
 
   if (cartItems.length === 0) {
     return (
-      <div style={{ padding: 'var(--space-2xl) 0' }}>
+      <div className='cart-empty'>
         <EmptyState
           heading='Your cart is empty'
           subtitle='Browse the catalogue to add products'
@@ -80,9 +80,10 @@ const CartScreen = ({ match, location, history }) => {
         </div>
       </div>
 
-      <Card className='cart-summary'>
+      <Card as='aside' className='cart-summary'>
         <div className='cart-summary__row'>
-          <span>Subtotal ({itemCount} items)</span>
+          <span>Subtotal</span>
+          <span>{itemCount} items</span>
         </div>
         <div className='cart-summary__row'>
           <span>Total</span>

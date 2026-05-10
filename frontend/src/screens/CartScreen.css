@@ -5,6 +5,10 @@
   padding: var(--space-md) 0;
 }
 
+.cart-empty {
+  padding: var(--space-2xl) 0;
+}
+
 @media (min-width: 1024px) {
   .cart-page { grid-template-columns: 1fr 320px; }
 }
