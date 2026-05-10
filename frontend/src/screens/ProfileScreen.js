@@ -30,7 +30,7 @@ const ProfileScreen = ({ history }) => {
   const { userInfo } = userLogin
 
   const userUpdateProfile = useSelector((state) => state.userUpdateProfile)
-  const { success } = userUpdateProfile
+  const { loading: loadingUpdate, success } = userUpdateProfile
 
   const orderListMy = useSelector((state) => state.orderListMy)
   const { loading: loadingOrders, error: errorOrders, orders } = orderListMy
@@ -129,7 +129,7 @@ const ProfileScreen = ({ history }) => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
-            <Button type='submit' variant='primary'>
+            <Button type='submit' variant='primary' loading={loadingUpdate}>
               Update
             </Button>
           </form>
