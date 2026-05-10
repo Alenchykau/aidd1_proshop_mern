@@ -11,12 +11,11 @@
 }
 
 .product-carousel__image {
+  display: block;
   width: 100%;
-  max-height: 56vh;
-  object-fit: cover;
-  border-radius: 0;
-  padding: 0;
-  margin: 0;
+  height: 56vh;
+  object-fit: contain;
+  background: var(--card-alt);
 }
 
 .product-carousel__caption {

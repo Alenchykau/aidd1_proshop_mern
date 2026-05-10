@@ -4,6 +4,7 @@
   gap: var(--space-sm);
   text-decoration: none;
   height: 100%;
+  margin-bottom: var(--space-md);
 }
 
 .product-card:hover { text-decoration: none; }
@@ -20,13 +21,15 @@
   font-family: 'Manrope', system-ui, sans-serif;
   font-size: 16px;
   font-weight: 600;
+  line-height: 1.4;
   color: var(--foreground);
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: calc(1.4em * 2);
+  text-overflow: ellipsis;
+  height: calc(1.4em * 2);
 }
 
 .product-card__price {
