@@ -15,3 +15,5 @@
 @media (max-width: 640px) {
   .ui-form-card { margin: var(--space-lg) auto; padding: 0 var(--space-sm); }
 }
+
+.ui-form-card--md { max-width: 560px; }
