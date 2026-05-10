@@ -12,7 +12,8 @@ const FormField = ({
   className = '',
   ...rest
 }) => {
-  const helperId = helperText ? `${id}-helper` : undefined
+  const showHelper = helperText && !error
+  const helperId = showHelper ? `${id}-helper` : undefined
   const errorId = error ? `${id}-error` : undefined
   const describedBy = [helperId, errorId].filter(Boolean).join(' ') || undefined
 
@@ -35,7 +36,7 @@ const FormField = ({
         {...inputProps}
         {...rest}
       />
-      {helperText && !error && (
+      {showHelper && (
         <span id={helperId} className='ui-field__helper'>{helperText}</span>
       )}
       {error && (

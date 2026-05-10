@@ -46,8 +46,8 @@ const DataTable = ({
               </td>
             </tr>
           )}
-          {!loading && rows.map((row) => (
-            <tr key={row[rowKey]}>
+          {!loading && rows.map((row, i) => (
+            <tr key={row[rowKey] != null ? row[rowKey] : i}>
               {columns.map((c) => (
                 <td key={c.key} className={getCellClass(c)}>
                   {c.render ? c.render(row) : row[c.key]}
