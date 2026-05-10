@@ -1,12 +1,11 @@
 import React from 'react'
-import { FaMoon, FaSun } from 'react-icons/fa'
 import { useTheme } from '../../context/ThemeContext'
 import './ThemeToggle.css'
 
 const ThemeToggle = () => {
   const { resolvedTheme, toggleTheme } = useTheme()
   const next = resolvedTheme === 'dark' ? 'light' : 'dark'
-  const Icon = resolvedTheme === 'dark' ? FaSun : FaMoon
+  const iconClass = resolvedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'
 
   return (
     <button
@@ -15,7 +14,7 @@ const ThemeToggle = () => {
       aria-label={`Switch to ${next} theme`}
       onClick={toggleTheme}
     >
-      <Icon aria-hidden='true' />
+      <i className={iconClass} aria-hidden='true' />
     </button>
   )
 }
