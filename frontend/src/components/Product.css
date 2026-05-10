@@ -1,0 +1,39 @@
+.product-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  text-decoration: none;
+  height: 100%;
+}
+
+.product-card:hover { text-decoration: none; }
+
+.product-card__image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--card-alt);
+}
+
+.product-card__name {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(1.4em * 2);
+}
+
+.product-card__price {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-feature-settings: 'tnum' 1;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--primary);
+  margin-top: auto;
+}
