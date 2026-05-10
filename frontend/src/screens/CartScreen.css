@@ -1,0 +1,97 @@
+.cart-page {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+}
+
+@media (min-width: 1024px) {
+  .cart-page { grid-template-columns: 1fr 320px; }
+}
+
+.cart-page__title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--foreground);
+}
+
+.cart-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 80px 40px;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cart-row__image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.cart-row__name a { color: var(--foreground); text-decoration: none; }
+.cart-row__name a:hover { color: var(--primary); }
+
+.cart-row__qty {
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  width: 100%;
+}
+
+.cart-row__price {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-feature-settings: 'tnum' 1;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .cart-row {
+    grid-template-columns: 64px 1fr 60px;
+    grid-template-areas:
+      'img name remove'
+      'img qty  price';
+    column-gap: var(--space-xs);
+  }
+  .cart-row__image  { grid-area: img; width: 64px; height: 64px; }
+  .cart-row__name   { grid-area: name; }
+  .cart-row__qty    { grid-area: qty; }
+  .cart-row__price  { grid-area: price; }
+  .cart-row__remove { grid-area: remove; }
+}
+
+.cart-summary { position: static; }
+@media (min-width: 1024px) {
+  .cart-summary { position: sticky; top: var(--space-lg); align-self: start; }
+}
+
+.cart-summary__row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-xs) 0;
+  color: var(--foreground);
+}
+
+.cart-summary__total {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-feature-settings: 'tnum' 1;
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.cart-summary__action {
+  width: 100%;
+  margin-top: var(--space-md);
+}
