@@ -1,0 +1,73 @@
+/* Bootstrap 4 overrides — re-point component classes at design tokens.
+   Loads after bootstrap.min.css and before index.css.
+   See docs/superpowers/specs/2026-05-10-m4-foundation-design.md §3.5 */
+
+/* Surface */
+body, .bg-light { background: var(--background); color: var(--foreground); }
+.card           { background: var(--card); border-color: var(--border); color: var(--foreground); }
+.dropdown-menu  { background: var(--card-alt); border-color: var(--border); color: var(--foreground); }
+.dropdown-item  { color: var(--foreground); }
+.dropdown-item:hover, .dropdown-item:focus {
+  background: var(--card); color: var(--foreground);
+}
+
+/* Navbar (existing Header uses navbar-dark; new Header uses .app-navbar) */
+.navbar-dark, .navbar-light, .app-navbar {
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--border);
+}
+.navbar-dark .navbar-brand,
+.navbar-dark .nav-link,
+.app-navbar .navbar-brand,
+.app-navbar .nav-link { color: var(--foreground); }
+.navbar-dark .nav-link:hover,
+.app-navbar .nav-link:hover { color: var(--primary); }
+.navbar-dark .navbar-toggler,
+.app-navbar .navbar-toggler { color: var(--foreground); border-color: var(--border); }
+
+/* Buttons */
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+  filter: brightness(1.08);
+  background: var(--primary); border-color: var(--primary); color: var(--primary-fg);
+}
+.btn-danger  { background: var(--destructive); border-color: var(--destructive); color: #fff; }
+.btn-info    { background: var(--info); border-color: var(--info); color: #fff; }
+.btn-light, .btn-outline-secondary {
+  background: transparent; border-color: var(--border); color: var(--foreground);
+}
+.btn-light:hover, .btn-outline-secondary:hover {
+  background: var(--card-alt); border-color: var(--foreground); color: var(--foreground);
+}
+
+/* Forms */
+.form-control {
+  background: var(--background); color: var(--foreground); border-color: var(--border);
+}
+.form-control:focus {
+  background: var(--background); color: var(--foreground); border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent);
+}
+.form-control::placeholder { color: var(--muted); }
+.form-label, label { color: var(--foreground); }
+
+/* Tables */
+.table { color: var(--foreground); }
+.table th, .table td { border-color: var(--border); }
+.table-hover tbody tr:hover { background: var(--card-alt); color: var(--foreground); }
+
+/* Pagination */
+.pagination .page-link {
+  background: var(--card); color: var(--foreground); border-color: var(--border);
+}
+.pagination .page-item.active .page-link {
+  background: var(--primary); border-color: var(--primary); color: var(--primary-fg);
+}
+.pagination .page-link:hover {
+  background: var(--card-alt); color: var(--foreground);
+}
+
+/* List group */
+.list-group-item {
+  background: var(--card); color: var(--foreground); border-color: var(--border);
+}
