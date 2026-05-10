@@ -477,3 +477,41 @@ Meta-docs vs query:          0.63–0.66
 ### Что осталось
 
 Query 1 в исходной формулировке упирается в фундаментальный cross-lingual gap: ни одно слово запроса не пересекается с текстом ADR. Полностью лечится **query expansion** через локальный chat-LLM (rephrase + перевод на язык корпуса) — отложено вне scope.
+
+## M4 — Redesign
+
+Дизайн-система: ProShop Tech-Minimal Dark (см. `DESIGN.md`). Подход —
+семантические CSS-токены на `:root` (light) и `.dark` (dark), функциональный
+переключатель тем в Header, OS preference как fallback. Bootstrap 4
+переведён на токены через `bootstrap-overrides.css`, поэтому легаси-экраны
+меняют тему вместе с редизайн-экранами.
+
+Стратегия — гибрид: сначала общие atoms (`Card`, `Button`, `FormField`,
+`FormCard`, `DataTable`, `Pagination`, `Badge`, `ThemeToggle`), потом
+per-screen редизайн в порядке public → auth → admin. Восемь групповых
+ASCII-wireframes в спеке Phase 0 покрывают все 16 экранов как шаблоны.
+
+Phase split: Phase 0 — Foundation (этот PR). Phase 1 — Public.
+Phase 2 — Auth/Checkout. Phase 3 — Admin.
+
+| #  | Page                       | Route                              | File                       | Видимость | Сделал?           |
+|----|----------------------------|------------------------------------|----------------------------|-----------|-------------------|
+| 1  | Home / Search results      | /, /search/:keyword, /page/:n      | HomeScreen.js              | public    | [ ]               |
+| 2  | Product details            | /product/:id                       | ProductScreen.js           | public    | [ ]               |
+| 3  | Cart                       | /cart/:id?                         | CartScreen.js              | public    | [ ]               |
+| 4  | Login                      | /login                             | LoginScreen.js             | public    | [ ]               |
+| 5  | Register                   | /register                          | RegisterScreen.js          | public    | [ ]               |
+| 6  | Profile                    | /profile                           | ProfileScreen.js           | auth      | [ ]               |
+| 7  | Shipping                   | /shipping                          | ShippingScreen.js          | auth      | [ ]               |
+| 8  | Payment                    | /payment                           | PaymentScreen.js           | auth      | [ ]               |
+| 9  | Place Order                | /placeorder                        | PlaceOrderScreen.js        | auth      | [ ]               |
+| 10 | Order details              | /order/:id                         | OrderScreen.js             | auth      | [ ]               |
+| 11 | Admin: Users list          | /admin/userlist                    | UserListScreen.js          | admin     | [ ]               |
+| 12 | Admin: User edit           | /admin/user/:id/edit               | UserEditScreen.js          | admin     | [ ]               |
+| 13 | Admin: Products list       | /admin/productlist                 | ProductListScreen.js       | admin     | [ ]               |
+| 14 | Admin: Product edit        | /admin/product/:id/edit            | ProductEditScreen.js       | admin     | [ ]               |
+| 15 | Admin: Orders list         | /admin/orderlist                   | OrderListScreen.js         | admin     | [ ]               |
+| 16 | Admin: Feature Dashboard   | /admin/featuredashboard            | FeatureDashboardScreen.js  | admin     | [x] обязательно   |
+
+(Phase 0 — Foundation сама по себе галочки в таблице не ставит — это
+инфраструктура. Phase 1/2/3 будут отмечать по мере сдачи.)
