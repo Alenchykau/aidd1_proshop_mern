@@ -4,7 +4,6 @@
   gap: var(--space-sm);
   text-decoration: none;
   height: 100%;
-  margin-bottom: var(--space-md);
 }
 
 .product-card:hover { text-decoration: none; }

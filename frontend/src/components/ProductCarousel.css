@@ -13,9 +13,11 @@
 .product-carousel__image {
   display: block;
   width: 100%;
-  height: 56vh;
+  aspect-ratio: 16 / 9;
+  max-height: 56vh;
   object-fit: contain;
   background: var(--card-alt);
+  padding: var(--space-md);
 }
 
 .product-carousel__caption {
