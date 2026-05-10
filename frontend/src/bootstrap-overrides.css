@@ -16,13 +16,27 @@ body, .bg-light { background: var(--background); color: var(--foreground); }
   background: var(--card) !important;
   border-bottom: 1px solid var(--border);
 }
+/* Win the cascade against Bootswatch's .navbar-light .navbar-nav .nav-link
+   (specificity 0,3,0): match the same depth and use !important to defeat the
+   light-theme rgba(0,0,0,0.3) text color which is unreadable in dark mode. */
 .navbar-dark .navbar-brand,
-.navbar-dark .nav-link,
+.navbar-light .navbar-brand,
 .app-navbar .navbar-brand,
-.app-navbar .nav-link { color: var(--foreground); }
-.navbar-dark .nav-link:hover,
-.app-navbar .nav-link:hover { color: var(--primary); }
+.navbar-dark .navbar-nav .nav-link,
+.navbar-light .navbar-nav .nav-link,
+.app-navbar .navbar-nav .nav-link,
+.app-navbar .nav-link,
+.navbar-dark .navbar-nav .dropdown-toggle,
+.navbar-light .navbar-nav .dropdown-toggle,
+.app-navbar .navbar-nav .dropdown-toggle { color: var(--foreground) !important; }
+
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-light .navbar-nav .nav-link:hover,
+.app-navbar .navbar-nav .nav-link:hover,
+.app-navbar .nav-link:hover { color: var(--primary) !important; }
+
 .navbar-dark .navbar-toggler,
+.navbar-light .navbar-toggler,
 .app-navbar .navbar-toggler { color: var(--foreground); border-color: var(--border); }
 
 /* Buttons */
