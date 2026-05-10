@@ -1,0 +1,29 @@
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0 var(--space-xs);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.theme-toggle:hover {
+  background: var(--card-alt);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
