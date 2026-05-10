@@ -1,0 +1,17 @@
+.ui-form-card {
+  max-width: 480px;
+  margin: var(--space-2xl) auto;
+}
+
+.ui-form-card__title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  margin: 0 0 var(--space-md) 0;
+}
+
+@media (max-width: 640px) {
+  .ui-form-card { margin: var(--space-lg) auto; padding: 0 var(--space-sm); }
+}
