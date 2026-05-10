@@ -496,16 +496,16 @@ Phase 2 — Auth/Checkout. Phase 3 — Admin.
 
 | #  | Page                       | Route                              | File                       | Видимость | Сделал?           |
 |----|----------------------------|------------------------------------|----------------------------|-----------|-------------------|
-| 1  | Home / Search results      | /, /search/:keyword, /page/:n      | HomeScreen.js              | public    | [ ]               |
-| 2  | Product details            | /product/:id                       | ProductScreen.js           | public    | [ ]               |
-| 3  | Cart                       | /cart/:id?                         | CartScreen.js              | public    | [ ]               |
-| 4  | Login                      | /login                             | LoginScreen.js             | public    | [ ]               |
-| 5  | Register                   | /register                          | RegisterScreen.js          | public    | [ ]               |
-| 6  | Profile                    | /profile                           | ProfileScreen.js           | auth      | [ ]               |
-| 7  | Shipping                   | /shipping                          | ShippingScreen.js          | auth      | [ ]               |
-| 8  | Payment                    | /payment                           | PaymentScreen.js           | auth      | [ ]               |
-| 9  | Place Order                | /placeorder                        | PlaceOrderScreen.js        | auth      | [ ]               |
-| 10 | Order details              | /order/:id                         | OrderScreen.js             | auth      | [ ]               |
+| 1  | Home / Search results      | /, /search/:keyword, /page/:n      | HomeScreen.js              | public    | [x]               |
+| 2  | Product details            | /product/:id                       | ProductScreen.js           | public    | [x]               |
+| 3  | Cart                       | /cart/:id?                         | CartScreen.js              | public    | [x]               |
+| 4  | Login                      | /login                             | LoginScreen.js             | public    | [x]               |
+| 5  | Register                   | /register                          | RegisterScreen.js          | public    | [x]               |
+| 6  | Profile                    | /profile                           | ProfileScreen.js           | auth      | [x]               |
+| 7  | Shipping                   | /shipping                          | ShippingScreen.js          | auth      | [x]               |
+| 8  | Payment                    | /payment                           | PaymentScreen.js           | auth      | [x]               |
+| 9  | Place Order                | /placeorder                        | PlaceOrderScreen.js        | auth      | [x]               |
+| 10 | Order details              | /order/:id                         | OrderScreen.js             | auth      | [x]               |
 | 11 | Admin: Users list          | /admin/userlist                    | UserListScreen.js          | admin     | [ ]               |
 | 12 | Admin: User edit           | /admin/user/:id/edit               | UserEditScreen.js          | admin     | [ ]               |
 | 13 | Admin: Products list       | /admin/productlist                 | ProductListScreen.js       | admin     | [ ]               |
