@@ -1,0 +1,47 @@
+.ui-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-md) 0;
+}
+
+.ui-pagination__item {
+  display: inline-flex;
+}
+
+.ui-pagination__btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.ui-pagination__btn:hover:not(:disabled) {
+  background: var(--card-alt);
+}
+
+.ui-pagination__btn.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-fg);
+}
+
+.ui-pagination__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ui-pagination__btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
