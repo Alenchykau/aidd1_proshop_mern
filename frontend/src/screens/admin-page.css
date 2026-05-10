@@ -62,3 +62,13 @@
   border: 1px solid var(--border);
   margin-bottom: var(--space-sm);
 }
+
+/* Bare links inside admin tables (e.g. mailto in UserList) follow tokens. */
+.admin-page table a {
+  color: var(--foreground);
+  text-decoration: none;
+}
+.admin-page table a:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}

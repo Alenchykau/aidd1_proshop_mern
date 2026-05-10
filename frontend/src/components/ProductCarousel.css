@@ -4,7 +4,9 @@
   overflow: hidden;
 }
 
-.product-carousel__link {
+.product-carousel__link,
+.product-carousel__link:hover,
+.product-carousel__link:focus {
   display: block;
   text-decoration: none;
   color: var(--foreground);
