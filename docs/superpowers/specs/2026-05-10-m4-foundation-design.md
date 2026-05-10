@@ -75,7 +75,7 @@ frontend/src/
       ThemeToggle.js / ThemeToggle.css
       index.js                   # barrel re-exports
     EmptyState.js                # already exists
-  bootstrap-overrides.scss       # NEW
+  bootstrap-overrides.css        # NEW (pure CSS — see §3.5)
   index.css                      # MODIFIED — see §3.3
   index.js                       # MODIFIED — wrap App in <ThemeProvider>
   components/Header.js           # MODIFIED — drop bg='dark', add ThemeToggle
@@ -165,70 +165,83 @@ The script must run synchronously before paint. Background flash on reload
 is the canonical proof of FOUC; verifying it stays gone is part of the QA
 checklist (§7).
 
-### 3.5 Bootstrap overrides
+### 3.5 Bootstrap overrides (pure CSS, no SCSS)
 
-`frontend/src/bootstrap-overrides.scss`:
+The repo today loads its Bootstrap base from `frontend/src/bootstrap.min.css`
+(local Bootswatch theme — already imported in `index.js`). Phase 0 keeps
+that file as the structural baseline (grid, utilities, component classes)
+and **appends a pure CSS override sheet** that re-points Bootstrap's
+visible component selectors at our tokens. No SCSS compiler is added —
+this avoids `node-sass` / `sass` install risk on Node 17+ (the project
+runs on Node 24 today and uses `--openssl-legacy-provider`; adding a
+native-build dep is unnecessary friction for a color-only override).
 
-```scss
-$body-bg:            var(--background);
-$body-color:         var(--foreground);
-$primary:            var(--primary);
-$danger:             var(--destructive);
-$info:               var(--info);
-$border-color:       var(--border);
-$card-bg:            var(--card);
-$card-border-color:  var(--border);
-$input-bg:           var(--background);
-$input-color:        var(--foreground);
-$input-border-color: var(--border);
-$input-placeholder-color: var(--muted);
-$navbar-dark-bg:     var(--card);
-$navbar-dark-color:  var(--foreground);
-$navbar-dark-hover-color: var(--primary);
-$dropdown-bg:        var(--card-alt);
-$dropdown-link-color:var(--foreground);
-$dropdown-link-hover-bg: var(--card);
-$table-color:        var(--foreground);
-$table-border-color: var(--border);
-$table-hover-bg:     var(--card-alt);
-$pagination-bg:      var(--card);
-$pagination-color:   var(--foreground);
-$pagination-active-bg: var(--primary);
-$pagination-active-color: var(--primary-fg);
+`frontend/src/bootstrap-overrides.css`:
 
-@import '~bootstrap/scss/bootstrap';
+```css
+/* Surface */
+body, .bg-light { background: var(--background); color: var(--foreground); }
+.card           { background: var(--card); border-color: var(--border); color: var(--foreground); }
+.dropdown-menu  { background: var(--card-alt); border-color: var(--border); color: var(--foreground); }
+
+/* Navbar (the existing Header uses navbar-dark; new Header uses .app-navbar) */
+.navbar-dark, .navbar-light, .app-navbar {
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--border);
+}
+.navbar-dark .navbar-brand,
+.navbar-dark .nav-link,
+.app-navbar .navbar-brand,
+.app-navbar .nav-link { color: var(--foreground); }
+.navbar-dark .nav-link:hover,
+.app-navbar .nav-link:hover { color: var(--primary); }
+
+/* Buttons */
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+  filter: brightness(1.08); background: var(--primary); border-color: var(--primary); color: var(--primary-fg);
+}
+.btn-danger  { background: var(--destructive); border-color: var(--destructive); color: #fff; }
+.btn-info    { background: var(--info); border-color: var(--info); color: #fff; }
+.btn-light, .btn-outline-secondary {
+  background: transparent; border-color: var(--border); color: var(--foreground);
+}
+
+/* Forms */
+.form-control {
+  background: var(--background); color: var(--foreground); border-color: var(--border);
+}
+.form-control:focus {
+  background: var(--background); color: var(--foreground); border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent);
+}
+.form-control::placeholder { color: var(--muted); }
+
+/* Tables */
+.table { color: var(--foreground); }
+.table th, .table td { border-color: var(--border); }
+.table-hover tbody tr:hover { background: var(--card-alt); color: var(--foreground); }
+
+/* Pagination */
+.pagination .page-link {
+  background: var(--card); color: var(--foreground); border-color: var(--border);
+}
+.pagination .page-item.active .page-link {
+  background: var(--primary); border-color: var(--primary); color: var(--primary-fg);
+}
 ```
 
-**Critical gotcha:** Bootstrap 4 uses `lighten()`, `darken()`, `mix()` on
-some of these variables (e.g. `$btn-primary-bg-hover` is derived from
-`$primary`). SCSS color functions cannot operate on CSS `var(--…)` strings
-— Sass will fail to compile or produce broken output for those derivations.
-Mitigation:
-- For derived variables Bootstrap uses internally, override the **derived**
-  variable too with our own `var(--…)` (e.g. `$btn-primary-hover-bg:
-  color-mix(in srgb, var(--primary) 92%, black)`).
-- Where unavoidable, accept that the derived state is slightly off-palette
-  on legacy screens until the screen is redesigned (cost is cosmetic, not
-  functional).
-- Maintain the override list as a single file; do not split.
-
-CRA 3.4.3 supports Sass via webpack but does **not** ship the compiler.
-Phase 0 adds `node-sass@4.14.1` as a frontend devDependency (`npm i -D
-node-sass@^4.14.1 --prefix frontend` — `node-sass@4.x` is the version
-compatible with the Webpack 4 / Node ≥ 14 the project pins). The new
-`.scss` import works out of the box once installed. The import order in
-`frontend/src/index.js` is:
+The import order in `frontend/src/index.js` is:
 
 ```js
-import './bootstrap-overrides.scss';   // sets vars + imports bootstrap
-import './index.css';                   // tokens layer on top
+import './bootstrap.min.css';        // Bootswatch base (existing)
+import './bootstrap-overrides.css';  // NEW — overrides Bootstrap selectors with tokens
+import './index.css';                 // tokens definitions + global styles (existing)
 ```
 
-Bootswatch (if it loads via CDN in `public/index.html`) **must** be removed
-or its `<link>` must come BEFORE our overrides import. We will check this
-at implementation time and remove if redundant. (See `DESIGN.md` §1 note
-on Bootswatch shadowing — today our `:root` already shadowed Bootswatch's
-`--primary`/`--info`, so dropping Bootswatch's `<link>` is safe.)
+`!important` is used sparingly on `.navbar-*` because Bootstrap 4 ships
+those rules with high specificity; the rest of the overrides win the cascade
+naturally because they load after `bootstrap.min.css`.
 
 ### 3.6 Header
 
@@ -757,12 +770,12 @@ Phase 2 — Auth/Checkout. Phase 3 — Admin.
 
 | Risk | Mitigation |
 |---|---|
-| SCSS color functions on `var(--…)` break Bootstrap derived variables. | Override the derived variable directly; document affected hover-states; accept cosmetic drift on legacy screens until they redesign. |
-| Removing Bootswatch reveals previously-hidden Bootstrap defaults on legacy screens. | Visually QA Cart, Login, OrderList in both themes after override import; if a screen breaks visibly, patch it in Phase 0 with a minimal style-only fix (no logic changes). |
+| Bootstrap hover/active variants stay off-palette because we override only the base, not the `:hover` derivative for every component. | Spec covers the most visible (`.btn-primary:hover` etc.); rest is cosmetic and gets fixed when the screen is redesigned. |
+| Bootswatch base (`bootstrap.min.css`) keeps emitting its colors and a missed selector flickers to the theme color. | Visually QA Cart, Login, OrderList in both themes after overrides land. If a screen flickers, patch the missed selector in `bootstrap-overrides.css`. |
 | Inline anti-FOUC script blocked by strict CSP. | Project ships no CSP today (CLAUDE.md confirms). When CSP arrives, switch to a `nonce` attribute. Out of scope. |
 | `localStorage` blocked (Safari private mode, embedded). | The script catches; fallback path = OS preference. Documented in §3.4. |
 | Phase 0 PR diff too large to review. | Split commits per concern: (a) report.md, (b) index.css refactor + anti-FOUC, (c) ThemeContext + ThemeToggle, (d) bootstrap-overrides.scss + Header, (e) atoms one-by-one, (f) wireframe spec doc. |
-| `node-sass@4.x` install fails on newer Node (≥17 needs node-sass ≥7) or breaks on `npm ci` clean install. | We pin to `4.14.1` and document Node 14–16 requirement in CLAUDE.md. If install fails on the developer machine, fall back to `sass@1.x` (Dart Sass) — CRA 3 supports both; the syntax in `bootstrap-overrides.scss` is the lowest-common-denominator that compiles on either. |
+| Bootstrap selectors not covered by overrides drift visually on legacy screens. | Overrides target the visible component classes only. Anything missed becomes a Phase 1/2/3 fix when that screen is redesigned. No new build dep avoids the secondary risk of Sass/Node version mismatch. |
 
 ---
 
