@@ -1,0 +1,36 @@
+/* Override Bootstrap's .alert-* visuals with token-driven tints. */
+.app-message.alert {
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 14px;
+  margin-bottom: var(--space-md);
+}
+
+.app-message.alert-danger {
+  background: color-mix(in srgb, var(--destructive) 15%, transparent);
+  border: 1px solid var(--destructive);
+  color: var(--destructive);
+}
+
+.app-message.alert-success {
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.app-message.alert-info {
+  background: color-mix(in srgb, var(--info) 15%, transparent);
+  border: 1px solid var(--info);
+  color: var(--info);
+}
+
+.app-message.alert-warning {
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
+  border: 1px solid var(--muted);
+  color: var(--foreground);
+}
+
+.app-message a {
+  color: inherit;
+  text-decoration: underline;
+}
