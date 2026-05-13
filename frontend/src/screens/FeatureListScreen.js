@@ -39,7 +39,7 @@ const SkeletonRow = () => (
   </tr>
 )
 
-const FeatureRow = ({ feature }) => {
+const FeatureRow = ({ feature, busy }) => {
   const dispatch = useDispatch()
   const [localTraffic, setLocalTraffic] = useState(feature.traffic_percentage)
   const debounceRef = useRef(null)
@@ -63,7 +63,10 @@ const FeatureRow = ({ feature }) => {
   }
 
   return (
-    <tr>
+    <tr
+      className={busy ? 'fd-row--busy' : undefined}
+      aria-busy={busy || undefined}
+    >
       <td>
         <span className='fd-feature-name'>{feature.name}</span>
         <span className='fd-feature-key'>{feature.key}</span>
@@ -114,7 +117,7 @@ const FeatureListScreen = ({ history }) => {
   const { userInfo } = userLogin
 
   const featureList = useSelector((state) => state.featureList)
-  const { loading, error, features } = featureList
+  const { loading, error, features, updatingKey, updateError } = featureList
 
   useEffect(() => {
     if (userInfo && userInfo.isAdmin) {
@@ -178,6 +181,8 @@ const FeatureListScreen = ({ history }) => {
         </select>
       </div>
 
+      {updateError && <Message variant='warning'>{updateError}</Message>}
+
       {error ? (
         <Message variant='danger'>{error}</Message>
       ) : showTable ? (
@@ -195,7 +200,9 @@ const FeatureListScreen = ({ history }) => {
             <tbody>
               {loading
                 ? [0, 1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)
-                : filtered.map((f) => <FeatureRow key={f.key} feature={f} />)}
+                : filtered.map((f) => (
+                    <FeatureRow key={f.key} feature={f} busy={updatingKey === f.key} />
+                  ))}
             </tbody>
           </table>
         </div>

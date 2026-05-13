@@ -293,6 +293,13 @@
   100% { background-position:  200% 0; }
 }
 
+/* ---------- In-flight row ---------- */
+.feature-dashboard .fd-row--busy {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 120ms ease-in-out;
+}
+
 /* ---------- Reduced motion (per DESIGN.md §8) ---------- */
 @media (prefers-reduced-motion: reduce) {
   .feature-dashboard *,
