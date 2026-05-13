@@ -14,15 +14,16 @@ The first submission shipped a feature dashboard, but the resubmission feedback 
 
 `prompt.md` reiterates the dashboard behavior (search, filter, three-color badges, slider, toggle, loading / empty / error states, ARIA). Most of those are already implemented; persistence is the gap.
 
-The work also needs to land on `m4-redesign`, where the rest of the admin surface has been migrated to a token-driven design system (`DataTable`, `Badge` atom, `admin-page` shared styles) — `FeatureListScreen` is the only admin screen still on raw react-bootstrap.
+The work also needs to land on `m4-redesign`. On that branch `FeatureListScreen` has already been migrated to design tokens through a screen-scoped CSS approach (`.feature-dashboard .fd-*` rules using `var(--foreground)`, `var(--primary)`, etc., custom `.fd-switch`, `.fd-slider`, `.fd-badge`, `EmptyState` integration, loading skeleton, error message, ARIA labels, separate name + monospace key). The visual side of the `prompt.md` checklist is therefore already satisfied on `m4-redesign`. The remaining gap on that branch is the same one we fix on `main` — toggle/slider don't persist.
+
+Note: the rest of the admin surface on `m4-redesign` uses M4 atoms (`DataTable`, `Badge` atom, `admin-page` shared styles), while `FeatureListScreen` goes its own route with scoped CSS. Both are valid design-token expressions; rewriting the existing scoped CSS into `DataTable` would be a refactor outside this task's scope.
 
 ## Goals
 
 - `features.json` is a backend runtime file, read on every request.
 - Toggle and slider persist to that file through an admin-only PUT endpoint.
 - MCP server reads and writes the same file; gains a `list_features` tool.
-- On `m4-redesign`, the dashboard uses the same M4 atoms as the rest of the admin surface.
-- The `prompt.md` checklist passes end to end on `m4-redesign`.
+- The `prompt.md` checklist passes end to end on `m4-redesign`, with persistence now backed by the real PUT endpoint.
 
 ## Non-goals
 
@@ -30,6 +31,7 @@ The work also needs to land on `m4-redesign`, where the rest of the admin surfac
 - No new MCP tool beyond `list_features`.
 - No move of feature-flag logic into a Mongoose model — the file is the contract with MCP and the course brief.
 - No refactor of admin screens outside `FeatureListScreen`.
+- No visual redesign of `FeatureListScreen` on `m4-redesign`. The existing scoped-CSS implementation already passes the visual checklist; rewriting it to use `DataTable` / `Badge` atoms would be out-of-scope churn.
 
 ## Architecture
 
@@ -129,75 +131,14 @@ This intentionally consolidates the list and the update into one reducer instead
 
 None. Features are server state, not user state.
 
-## UI redesign (m4-redesign branch only)
+## UI changes on `m4-redesign`
 
-After the merge from `main`, `FeatureListScreen.js` is rewritten to use the M4 atoms; the actions/reducer wiring is left intact.
+The existing layout, columns, scoped CSS, EmptyState wiring, and ARIA stay as they are. The merge from `main` brings in the new `updateFeature(key, patch)` thunk and the consolidated reducer; `FeatureListScreen.js` is wired to those, plus two small additions:
 
-### Layout
+- **In-flight feedback.** When the row's `key === updatingKey`, the `<tr>` renders with `aria-busy='true'` and a class (e.g. `fd-row--busy`) that the existing scoped CSS dims by ~60% opacity. Visual cue for the slider/toggle that wait on a server round-trip.
+- **Update error surface.** Above the table, after the existing `error` message, add `{updateError && <Message variant='warning'>{updateError}</Message>}`. Same `Message` component already imported.
 
-```
-<div className='admin-page'>
-  <div className='admin-page__header'>
-    <h1 className='admin-page__title'>Feature Dashboard</h1>
-  </div>
-
-  <div className='feature-toolbar'>
-    <input  ... aria-label='Search features' />
-    <select ... aria-label='Filter by status'>
-      <option>All</option>
-      <option>Enabled</option>
-      <option>Testing</option>
-      <option>Disabled</option>
-    </select>
-  </div>
-
-  {error && <Message variant='danger'>{error}</Message>}
-  {updateError && <Message variant='warning'>{updateError}</Message>}
-
-  <DataTable
-    columns={columns}
-    rows={filteredFeatures}
-    rowKey='key'
-    loading={loading}
-    emptyState={
-      (keyword || statusFilter !== 'All')
-        ? <EmptyState heading='No features match your filter' />
-        : <EmptyState heading='No features defined' />
-    }
-  />
-</div>
-```
-
-### Columns
-
-| key | header | render |
-|---|---|---|
-| `name` | Feature | `feature.name` plus the snake_case key on a second line in muted monospace |
-| `status` | Status | `<Badge variant>` — `Enabled→success`, `Testing→info`, `Disabled→default` |
-| `traffic` | Traffic | styled `<input type=range>` + `<span aria-live=polite>{n}%</span>`, debounced 150 ms → `updateFeature(key, { traffic_percentage })` |
-| `last_modified` | Last modified | `YYYY-MM-DD` |
-| `toggle` | Enabled | `<input type=checkbox role=switch>` styled as `.m4-switch`, `checked={status === 'Enabled'}`, `onChange` → `updateFeature(key, { status: checked ? 'Enabled' : 'Disabled' })` |
-
-`align: 'center'` for `status` and `last_modified`; `align: 'right'` for `toggle`. Rows being updated render with `aria-busy='true'` and reduced opacity via `updatingKey`.
-
-### Styles
-
-New rules in `FeatureListScreen.css`:
-
-- `.feature-toolbar` — flex row, wraps, `gap: var(--space-md)`.
-- `.feature-row__key` — `font-family: var(--font-mono)`, smaller size, muted color.
-- `.feature-slider` — token-driven `input[type=range]` styling for the design system.
-- `.m4-switch` — CSS-only toggle on `<input type=checkbox role=switch>` (no `react-bootstrap Form.Check`).
-
-These live in the screen's CSS file, not in `components/ui/`. They are local to one screen — extracting them into atoms would be premature.
-
-### Accessibility
-
-- Slider: `aria-label="Traffic percentage for {name}"`, `aria-valuemin/max/now`. Live percent in `<span aria-live='polite'>`.
-- Toggle: `role='switch'`, `aria-checked`, label text `Enable {name}` (visually hidden if the column header alone is enough).
-- Search: `<label class='sr-only'>` plus `aria-label`.
-- Filter: native `<select>` — keyboard works by default.
-- Row in-flight: `aria-busy='true'` on the `<tr>`.
+That is the entire UI delta on `m4-redesign`. No DataTable migration, no Badge-atom swap, no markup restructuring. Toggle and slider continue to call `dispatch(...)`; only the action thunk underneath changes.
 
 ## Migration plan
 
@@ -222,7 +163,7 @@ Expected conflicts: `CLAUDE.md` (minor, resolve by combining sections), possibly
 
 ### Phase 3 — `m4-redesign` (single commit)
 
-6. **feat: redesign FeatureListScreen with DataTable and M4 atoms** — UI rewrite per the section above, new CSS, extended test coverage (optimistic update, rollback on failure, filter empty state).
+6. **feat: surface in-flight + update-error states on FeatureListScreen** — wire `updatingKey` to row class + `aria-busy`, surface `updateError` via the existing `Message` component, add scoped CSS rule for `.fd-row--busy`. Extend `FeatureListScreen.test.js` with optimistic-update + rollback assertions (existing tests for search/filter/empty are kept).
 
 ### Phase 4 — verify against `prompt.md`
 
