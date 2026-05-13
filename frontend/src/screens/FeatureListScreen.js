@@ -2,11 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Table, Form, Badge, Row, Col } from 'react-bootstrap'
 import Message from '../components/Message'
-import {
-  listFeatures,
-  toggleFeature,
-  updateFeatureTraffic,
-} from '../actions/featureActions'
+import { listFeatures, updateFeature } from '../actions/featureActions'
 
 // The project ships a custom Bootswatch theme that redefines --primary (black) and
 // --secondary (white), so the natural Bootstrap variants don't read as the spec's
@@ -53,12 +49,13 @@ const FeatureRow = ({ feature }) => {
     setLocalTraffic(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      dispatch(updateFeatureTraffic(feature.key, value))
+      dispatch(updateFeature(feature.key, { traffic_percentage: value }))
     }, 150)
   }
 
   const handleToggle = () => {
-    dispatch(toggleFeature(feature.key))
+    const nextStatus = feature.status === 'Enabled' ? 'Disabled' : 'Enabled'
+    dispatch(updateFeature(feature.key, { status: nextStatus }))
   }
 
   return (

@@ -2,46 +2,53 @@ import {
   FEATURE_LIST_REQUEST,
   FEATURE_LIST_SUCCESS,
   FEATURE_LIST_FAIL,
-  FEATURE_TOGGLE,
-  FEATURE_TRAFFIC_UPDATE,
+  FEATURE_UPDATE_REQUEST,
+  FEATURE_UPDATE_SUCCESS,
+  FEATURE_UPDATE_FAIL,
 } from '../constants/featureConstants'
 
-const today = () => new Date().toISOString().slice(0, 10)
+const initial = {
+  loading: false,
+  features: [],
+  error: null,
+  updatingKey: null,
+  updateError: null,
+}
 
-export const featureListReducer = (state = { features: [] }, action) => {
+const replaceByKey = (features, key, next) =>
+  features.map((f) => (f.key === key ? next : f))
+
+export const featureListReducer = (state = initial, action) => {
   switch (action.type) {
     case FEATURE_LIST_REQUEST:
-      return { loading: true, features: [] }
+      return { ...state, loading: true, features: [], error: null }
     case FEATURE_LIST_SUCCESS:
-      return { loading: false, features: action.payload }
+      return { ...state, loading: false, features: action.payload, error: null }
     case FEATURE_LIST_FAIL:
-      return { loading: false, features: [], error: action.payload }
-    case FEATURE_TOGGLE:
+      return { ...state, loading: false, error: action.payload }
+
+    case FEATURE_UPDATE_REQUEST: {
+      const { key, patch } = action.payload
+      const optimistic = state.features.map((f) =>
+        f.key === key ? { ...f, ...patch } : f
+      )
+      return { ...state, features: optimistic, updatingKey: key, updateError: null }
+    }
+    case FEATURE_UPDATE_SUCCESS:
       return {
         ...state,
-        features: state.features.map((f) =>
-          f.key === action.payload.key
-            ? {
-                ...f,
-                status: f.status === 'Disabled' ? 'Enabled' : 'Disabled',
-                last_modified: today(),
-              }
-            : f
-        ),
+        features: replaceByKey(state.features, action.payload.key, action.payload),
+        updatingKey: null,
+        updateError: null,
       }
-    case FEATURE_TRAFFIC_UPDATE:
+    case FEATURE_UPDATE_FAIL:
       return {
         ...state,
-        features: state.features.map((f) =>
-          f.key === action.payload.key
-            ? {
-                ...f,
-                traffic_percentage: action.payload.traffic_percentage,
-                last_modified: today(),
-              }
-            : f
-        ),
+        features: replaceByKey(state.features, action.payload.key, action.payload.prev),
+        updatingKey: null,
+        updateError: action.payload.error,
       }
+
     default:
       return state
   }
