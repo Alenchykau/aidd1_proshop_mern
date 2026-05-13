@@ -2,11 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import EmptyState from '../components/EmptyState'
 import Message from '../components/Message'
-import {
-  listFeatures,
-  toggleFeature,
-  updateFeatureTraffic,
-} from '../actions/featureActions'
+import { listFeatures, updateFeature } from '../actions/featureActions'
 import './FeatureListScreen.css'
 
 const STATUS_BADGE_CLASS = {
@@ -57,12 +53,13 @@ const FeatureRow = ({ feature }) => {
     setLocalTraffic(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      dispatch(updateFeatureTraffic(feature.key, value))
+      dispatch(updateFeature(feature.key, { traffic_percentage: value }))
     }, 150)
   }
 
   const handleToggle = () => {
-    dispatch(toggleFeature(feature.key))
+    const nextStatus = feature.status === 'Enabled' ? 'Disabled' : 'Enabled'
+    dispatch(updateFeature(feature.key, { status: nextStatus }))
   }
 
   return (

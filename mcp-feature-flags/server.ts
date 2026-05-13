@@ -6,7 +6,7 @@ import { readFile, writeFile, rename } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const FILE = resolve(dirname(fileURLToPath(import.meta.url)), "../../docs/project-data/features.json");
+const FILE = resolve(dirname(fileURLToPath(import.meta.url)), "../../backend/features.json");
 const today = () => new Date().toISOString().slice(0, 10);
 const load = async (): Promise<Record<string, any>> => JSON.parse(await readFile(FILE, "utf8"));
 const save = async (data: Record<string, any>) => { const tmp = FILE + ".tmp"; await writeFile(tmp, JSON.stringify(data, null, 2)); await rename(tmp, FILE); };
@@ -53,6 +53,23 @@ server.registerTool("adjust_traffic_rollout", {
   await save(data);
   const hint = percentage === 0 ? "Consider set_feature_state({state:'Disabled'}) for kill-switch semantics." : percentage === 100 && f.status === "Testing" ? "Consider set_feature_state({state:'Enabled'}) to promote." : null;
   return out({ feature_name, status: f.status, traffic_percentage: f.traffic_percentage, last_modified: f.last_modified, hint });
+});
+
+server.registerTool("list_features", {
+  description: `What: Returns a compact list of ALL feature flags with their status and traffic_percentage. Use to discover available flag names before calling get_feature_info / set_feature_state / adjust_traffic_rollout.\nWhen to call: user asks "show all flags", "what features do we have", "what's enabled", or you need to discover the snake_case key for a feature mentioned by display name.\nWhen NOT to call: do not call to fetch full details of ONE feature — use get_feature_info; do not parse backend/features.json directly with Read/Grep.\nInput: {} (no parameters)\nOutput on success: { features: [{ feature_name, name, status, traffic_percentage }] } — sorted by feature_name.\nExamples:\n  1) list_features({}) — full inventory before a status sweep\n  2) list_features({}) — locate the snake_case key for "Dark Mode" → "dark_mode"`,
+  inputSchema: {},
+}, async () => {
+  const raw = await readFile(FILE, "utf-8");
+  const data = JSON.parse(raw);
+  const features = Object.entries(data)
+    .map(([feature_name, v]: [string, any]) => ({
+      feature_name,
+      name: v.name,
+      status: v.status,
+      traffic_percentage: v.traffic_percentage,
+    }))
+    .sort((a, b) => a.feature_name.localeCompare(b.feature_name));
+  return out({ features });
 });
 
 await server.connect(new StdioServerTransport());

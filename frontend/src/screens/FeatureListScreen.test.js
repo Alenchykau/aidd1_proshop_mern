@@ -5,14 +5,14 @@ import { createStore, combineReducers } from 'redux'
 import { MemoryRouter } from 'react-router-dom'
 import FeatureListScreen from './FeatureListScreen'
 import { featureListReducer } from '../reducers/featureReducers'
+import { updateFeature } from '../actions/featureActions'
 
 // Stub the action creators so mount-time dispatch doesn't reset the prepopulated
 // featureList state we set up in buildStore. The thunk would fire FEATURE_LIST_REQUEST
 // (which clears the features array) before our assertions run.
 jest.mock('../actions/featureActions', () => ({
-  listFeatures: () => ({ type: 'TEST_NOOP' }),
-  toggleFeature: () => ({ type: 'TEST_NOOP' }),
-  updateFeatureTraffic: () => ({ type: 'TEST_NOOP' }),
+  listFeatures: jest.fn(() => ({ type: 'TEST_NOOP' })),
+  updateFeature: jest.fn(() => ({ type: 'TEST_NOOP' })),
 }))
 
 const sampleFeatures = [
@@ -99,5 +99,28 @@ describe('FeatureListScreen', () => {
       target: { value: 'zzznotreal' },
     })
     expect(getByText(/No features match your filters/i)).toBeInTheDocument()
+  })
+})
+
+describe('FeatureListScreen — persistence wiring', () => {
+  beforeEach(() => {
+    updateFeature.mockClear()
+  })
+
+  it('dispatches updateFeature with status patch on toggle', () => {
+    const { getByLabelText } = renderScreen()
+    fireEvent.click(getByLabelText('Enable Redesigned Cart UI'))
+    expect(updateFeature).toHaveBeenCalledWith('cart_redesign', { status: 'Enabled' })
+  })
+
+  it('dispatches updateFeature with traffic patch after slider debounce', () => {
+    jest.useFakeTimers()
+    const { getByLabelText } = renderScreen()
+    fireEvent.change(getByLabelText('Traffic percentage for New Search Algorithm'), {
+      target: { value: '60' },
+    })
+    jest.advanceTimersByTime(200)
+    expect(updateFeature).toHaveBeenCalledWith('search_v2', { traffic_percentage: 60 })
+    jest.useRealTimers()
   })
 })
