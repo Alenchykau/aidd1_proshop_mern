@@ -21,7 +21,7 @@ export const listFeatures = () => async (dispatch, getState) => {
       },
     }
 
-    const { data } = await axios.get('/api/features', config)
+    const { data } = await axios.get('/api/feature-flags', config)
 
     dispatch({ type: FEATURE_LIST_SUCCESS, payload: data })
   } catch (error) {
