@@ -104,12 +104,12 @@ For any question about features, architecture, ADRs, runbooks, or incidents in `
 
 ### Feature flags (`feature-flags` MCP)
 
-Source of truth is `docs/project-data/features.json`. **Never edit it via `Edit`/`Write`** — always go through the MCP, which validates dependencies, enforces the disabled-traffic lock, and stamps `last_modified`.
+Source of truth is `backend/features.json`. **Never edit it via `Edit`/`Write`** — always go through the MCP, which validates dependencies, enforces the disabled-traffic lock, and stamps `last_modified`.
 
 - Status questions ("what's the status of `gift_message`?", "is `search_v2` on?") → `mcp__feature-flags__get_feature_info`. Don't read `features.json` directly.
 - State changes ("enable X", "move Y to Testing", "kill-switch Z") → `mcp__feature-flags__set_feature_state`.
 - Traffic ramps ("set traffic to 25%", canary steps) → `mcp__feature-flags__adjust_traffic_rollout`. Not `set_feature_state`.
-- "List all flags" — no `list_features` tool exists today; `Read docs/project-data/features.json` is acceptable for that one case. Per-flag details still go through `get_feature_info`.
+- "List all flags" — no `list_features` tool exists today; `Read backend/features.json` is acceptable for that one case. Per-flag details still go through `get_feature_info`.
 
 ## Conventions
 

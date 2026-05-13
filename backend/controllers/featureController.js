@@ -6,12 +6,7 @@ import asyncHandler from 'express-async-handler'
 // @route   GET /api/features
 // @access  Private/Admin
 const getFeatures = asyncHandler(async (req, res) => {
-  const filePath = path.resolve(
-    process.cwd(),
-    'docs',
-    'project-data',
-    'features.json'
-  )
+  const filePath = path.resolve(process.cwd(), 'backend', 'features.json')
   const raw = await fs.readFile(filePath, 'utf-8')
   const obj = JSON.parse(raw)
   const features = Object.entries(obj).map(([key, value]) => ({
