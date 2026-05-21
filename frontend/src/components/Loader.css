@@ -1,0 +1,8 @@
+.app-loader {
+  width: 64px;
+  height: 64px;
+  margin: var(--space-2xl) auto;
+  display: block;
+  border-color: var(--primary);
+  border-right-color: transparent;
+}

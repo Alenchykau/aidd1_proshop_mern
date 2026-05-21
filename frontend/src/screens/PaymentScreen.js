@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { Form, Button, Col } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
-import FormContainer from '../components/FormContainer'
+import FormCard from '../components/ui/FormCard'
+import Button from '../components/ui/Button'
 import CheckoutSteps from '../components/CheckoutSteps'
 import { savePaymentMethod } from '../actions/cartActions'
+import './PaymentScreen.css'
 
 const PaymentScreen = ({ history }) => {
   const cart = useSelector((state) => state.cart)
@@ -24,38 +25,41 @@ const PaymentScreen = ({ history }) => {
   }
 
   return (
-    <FormContainer>
+    <>
       <CheckoutSteps step1 step2 step3 />
-      <h1>Payment Method</h1>
-      <Form onSubmit={submitHandler}>
-        <Form.Group>
-          <Form.Label as='legend'>Select Method</Form.Label>
-          <Col>
-            <Form.Check
-              type='radio'
-              label='PayPal or Credit Card'
-              id='PayPal'
-              name='paymentMethod'
-              value='PayPal'
-              checked
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            ></Form.Check>
-            {/* <Form.Check
-              type='radio'
-              label='Stripe'
-              id='Stripe'
-              name='paymentMethod'
-              value='Stripe'
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            ></Form.Check> */}
-          </Col>
-        </Form.Group>
-
-        <Button type='submit' variant='primary'>
-          Continue
-        </Button>
-      </Form>
-    </FormContainer>
+      <FormCard title='Payment Method'>
+        <form onSubmit={submitHandler}>
+          <fieldset className='payment__fieldset'>
+            <legend className='payment__legend'>Select Method</legend>
+            <label className='payment__option'>
+              <input
+                type='radio'
+                id='PayPal'
+                name='paymentMethod'
+                value='PayPal'
+                checked={paymentMethod === 'PayPal'}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span>PayPal or Credit Card</span>
+            </label>
+            {/* <label className='payment__option'>
+              <input
+                type='radio'
+                id='Stripe'
+                name='paymentMethod'
+                value='Stripe'
+                checked={paymentMethod === 'Stripe'}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+              <span>Stripe</span>
+            </label> */}
+          </fieldset>
+          <Button type='submit' variant='primary'>
+            Continue
+          </Button>
+        </form>
+      </FormCard>
+    </>
   )
 }
 

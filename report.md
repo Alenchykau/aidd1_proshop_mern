@@ -477,3 +477,7 @@ Meta-docs vs query:          0.63–0.66
 ### Что осталось
 
 Query 1 в исходной формулировке упирается в фундаментальный cross-lingual gap: ни одно слово запроса не пересекается с текстом ADR. Полностью лечится **query expansion** через локальный chat-LLM (rephrase + перевод на язык корпуса) — отложено вне scope.
+
+## M4 — Redesign
+
+См. `homework/M4/README.md`.

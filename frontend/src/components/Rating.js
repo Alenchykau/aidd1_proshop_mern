@@ -1,75 +1,23 @@
 import React from 'react'
+import './Rating.css'
 
-const Rating = ({ value, text, color }) => {
+const Rating = ({ value, text }) => {
+  const star = (threshold) => {
+    if (value >= threshold) return 'fas fa-star'
+    if (value >= threshold - 0.5) return 'fas fa-star-half-alt'
+    return 'far fa-star'
+  }
+
   return (
-    <div className='rating'>
-      <span>
-        <i
-          style={{ color }}
-          className={
-            value >= 1
-              ? 'fas fa-star'
-              : value >= 0.5
-              ? 'fas fa-star-half-alt'
-              : 'far fa-star'
-          }
-        ></i>
-      </span>
-      <span>
-        <i
-          style={{ color }}
-          className={
-            value >= 2
-              ? 'fas fa-star'
-              : value >= 1.5
-              ? 'fas fa-star-half-alt'
-              : 'far fa-star'
-          }
-        ></i>
-      </span>
-      <span>
-        <i
-          style={{ color }}
-          className={
-            value >= 3
-              ? 'fas fa-star'
-              : value >= 2.5
-              ? 'fas fa-star-half-alt'
-              : 'far fa-star'
-          }
-        ></i>
-      </span>
-      <span>
-        <i
-          style={{ color }}
-          className={
-            value >= 4
-              ? 'fas fa-star'
-              : value >= 3.5
-              ? 'fas fa-star-half-alt'
-              : 'far fa-star'
-          }
-        ></i>
-      </span>
-      <span>
-        <i
-          style={{ color }}
-          className={
-            value >= 5
-              ? 'fas fa-star'
-              : value >= 4.5
-              ? 'fas fa-star-half-alt'
-              : 'far fa-star'
-          }
-        ></i>
-      </span>
-      <span>{text && text}</span>
+    <div className='rating' role='img' aria-label={`${value} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((threshold) => (
+        <span key={threshold}>
+          <i className={star(threshold)} aria-hidden='true' />
+        </span>
+      ))}
+      {text && <span className='rating__text'>{text}</span>}
     </div>
   )
-}
-
-Rating.defaultProps = {
-  color: '#f8e825',
 }
 
 export default Rating

@@ -1,0 +1,45 @@
+.home-page {
+  padding: var(--space-md) 0;
+}
+
+.home-back {
+  display: inline-block;
+  margin-bottom: var(--space-md);
+}
+
+.home-hero {
+  margin-bottom: var(--space-2xl);
+}
+
+.home-section-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.home-empty {
+  padding: var(--space-2xl) 0;
+}
+
+/* Surface loading skeleton (replaces full-screen Loader spinner) */
+.product-card-skeleton__image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+.product-card-skeleton__line {
+  height: 16px;
+  width: 80%;
+  margin-bottom: var(--space-xs);
+}
+.product-card-skeleton__line--short { width: 50%; }
+.product-card-skeleton__price {
+  height: 20px;
+  width: 30%;
+  margin-top: var(--space-sm);
+}

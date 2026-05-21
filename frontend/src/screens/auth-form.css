@@ -1,0 +1,11 @@
+.auth-form__footer {
+  margin: var(--space-md) 0 0 0;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+.auth-form__footer a {
+  color: var(--primary);
+  text-decoration: none;
+}
+.auth-form__footer a:hover { text-decoration: underline; }

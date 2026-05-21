@@ -1,0 +1,311 @@
+/* All rules below are scoped to .feature-dashboard so they don't leak into
+   other screens that still depend on Bootstrap defaults. */
+
+.feature-dashboard {
+  font-family: 'Manrope', system-ui, sans-serif;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* ---------- Header ---------- */
+.feature-dashboard .fd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.feature-dashboard .fd-header h1 {
+  margin: 0;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--foreground);
+  /* override global h1 padding from index.css */
+  padding: 0;
+}
+.feature-dashboard .fd-subtitle {
+  margin: 8px 0 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+.feature-dashboard .fd-count-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  color: var(--primary);
+  border-radius: 9999px;
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.feature-dashboard .fd-count-chip .fd-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--primary);
+}
+
+/* ---------- Filter row ---------- */
+.feature-dashboard .fd-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.feature-dashboard .fd-input,
+.feature-dashboard .fd-select {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--foreground);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  width: 100%;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.feature-dashboard .fd-input::placeholder { color: var(--muted); }
+.feature-dashboard .fd-input:focus,
+.feature-dashboard .fd-select:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent);
+}
+.feature-dashboard .fd-input.fd-search {
+  padding-left: 40px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23999'><path d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 14px center;
+  background-size: 14px;
+}
+.feature-dashboard .fd-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23999'><path d='M8 11L3 6h10l-5 5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* ---------- Table ---------- */
+.feature-dashboard .fd-table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  overflow-x: auto;
+}
+.feature-dashboard .fd-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.feature-dashboard .fd-table th {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  text-align: left;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.feature-dashboard .fd-table th.fd-th-right { text-align: right; }
+.feature-dashboard .fd-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 16px;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  vertical-align: middle;
+  color: var(--foreground);
+}
+.feature-dashboard .fd-table tbody tr {
+  transition: background-color 150ms ease;
+}
+.feature-dashboard .fd-table tbody tr:hover {
+  background: var(--card-alt);
+}
+.feature-dashboard .fd-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.feature-dashboard .fd-feature-name {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.feature-dashboard .fd-feature-key {
+  display: block;
+  margin-top: 2px;
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  color: var(--muted);
+  font-feature-settings: "tnum" 1;
+}
+
+.feature-dashboard .fd-mono {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-feature-settings: "tnum" 1;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ---------- Status badge ---------- */
+.feature-dashboard .fd-badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.feature-dashboard .fd-badge--enabled {
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  color: var(--primary);
+}
+.feature-dashboard .fd-badge--testing {
+  background: color-mix(in srgb, var(--info) 18%, transparent);
+  color: var(--info);
+}
+.feature-dashboard .fd-badge--disabled {
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  color: var(--muted);
+}
+
+/* ---------- Slider ---------- */
+.feature-dashboard .fd-slider-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+.feature-dashboard .fd-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  background: color-mix(in srgb, var(--foreground) 15%, transparent);
+  border-radius: 9999px;
+  outline: none;
+}
+.feature-dashboard .fd-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--primary);
+  border: 2px solid var(--card);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+.feature-dashboard .fd-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.feature-dashboard .fd-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--primary);
+  border: 2px solid var(--card);
+  border-radius: 9999px;
+  cursor: pointer;
+}
+.feature-dashboard .fd-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ring) 25%, transparent);
+}
+.feature-dashboard .fd-slider-value {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-feature-settings: "tnum" 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  width: 40px;
+  text-align: right;
+}
+
+/* ---------- Toggle switch ---------- */
+.feature-dashboard .fd-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.feature-dashboard .fd-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.feature-dashboard .fd-switch-track {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--foreground) 15%, transparent);
+  border-radius: 9999px;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+}
+.feature-dashboard .fd-switch-track::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 3px;
+  top: 3px;
+  background: var(--muted);
+  border-radius: 9999px;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+.feature-dashboard .fd-switch input:checked + .fd-switch-track {
+  background: color-mix(in srgb, var(--primary) 40%, transparent);
+}
+.feature-dashboard .fd-switch input:checked + .fd-switch-track::before {
+  transform: translateX(16px);
+  background: var(--primary);
+}
+.feature-dashboard .fd-switch input:focus-visible + .fd-switch-track {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 50%, transparent);
+}
+
+.feature-dashboard .fd-toggle-cell {
+  text-align: right;
+}
+
+/* ---------- Skeleton ---------- */
+.feature-dashboard .fd-skeleton-cell {
+  display: inline-block;
+  width: 70%;
+  height: 14px;
+  background: linear-gradient(90deg, var(--card) 0%, var(--card-alt) 50%, var(--card) 100%);
+  background-size: 200% 100%;
+  animation: fd-skeleton-shimmer 1.5s infinite linear;
+  border-radius: 4px;
+}
+@keyframes fd-skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ---------- In-flight row ---------- */
+.feature-dashboard .fd-row--busy {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 120ms ease-in-out;
+}
+
+/* ---------- Reduced motion (per DESIGN.md §8) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .feature-dashboard *,
+  .feature-dashboard *::before,
+  .feature-dashboard *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

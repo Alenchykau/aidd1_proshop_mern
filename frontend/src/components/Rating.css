@@ -1,0 +1,16 @@
+.rating {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-micro);
+  color: var(--primary);
+}
+
+.rating > span {
+  display: inline-flex;
+}
+
+.rating__text {
+  margin-left: var(--space-xs);
+  color: var(--muted);
+  font-size: 13px;
+}

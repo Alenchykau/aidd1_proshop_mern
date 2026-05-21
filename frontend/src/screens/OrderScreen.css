@@ -1,0 +1,116 @@
+.order-page {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+}
+
+@media (min-width: 1024px) {
+  .order-page { grid-template-columns: 1fr 320px; }
+}
+
+.order-page__title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--foreground);
+}
+
+.order-page__title__id {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-size: 20px;
+  color: var(--muted);
+  margin-left: var(--space-xs);
+}
+
+.order-page__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.order-page__summary { position: static; }
+
+@media (min-width: 1024px) {
+  .order-page__summary { position: sticky; top: var(--space-lg); align-self: start; }
+}
+
+.order-card h2 {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--foreground);
+}
+
+.order-card p { color: var(--foreground); margin: 0 0 var(--space-xs) 0; }
+
+.order-card__status { margin-top: var(--space-sm); }
+
+.order-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.order-items__row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.order-items__row:last-child { border-bottom: none; }
+
+.order-items__image {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.order-items__name { color: var(--foreground); text-decoration: none; }
+.order-items__name:hover { color: var(--primary); }
+
+.order-items__calc {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-feature-settings: 'tnum' 1;
+  color: var(--foreground);
+}
+
+.order-summary__row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-xs) 0;
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-feature-settings: 'tnum' 1;
+  color: var(--foreground);
+}
+
+.order-summary__row--total {
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+
+.order-summary__total { color: var(--primary); font-size: 20px; }
+
+.order-summary__action { width: 100%; margin-top: var(--space-md); }
+
+.order-summary__heading {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--foreground);
+}
+
+/* Surface loading skeleton (replaces full-screen Loader spinner) */
+.order-skeleton__title    { height: 32px; width: 50%; margin-bottom: var(--space-md); }
+.order-skeleton__card     { height: 120px; border-radius: var(--radius-lg); }
+.order-skeleton__summary  { height: 280px; border-radius: var(--radius-lg); }

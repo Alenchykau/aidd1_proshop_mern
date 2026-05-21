@@ -1,0 +1,74 @@
+.admin-page { padding: var(--space-md) 0; }
+
+.admin-page__title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-md) 0;
+  color: var(--foreground);
+}
+
+.admin-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.admin-page__header .admin-page__title { margin: 0; }
+
+.admin-page__back {
+  display: inline-block;
+  margin-bottom: var(--space-md);
+}
+
+.admin-form__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.admin-form__checkbox input {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.admin-form__upload {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.admin-form__upload input[type='file'] { display: none; }
+
+.admin-form__image-preview {
+  display: block;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--card-alt);
+  border: 1px solid var(--border);
+  margin-bottom: var(--space-sm);
+}
+
+/* Bare links inside admin tables (e.g. mailto in UserList) follow tokens. */
+.admin-page table a {
+  color: var(--foreground);
+  text-decoration: none;
+}
+.admin-page table a:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}

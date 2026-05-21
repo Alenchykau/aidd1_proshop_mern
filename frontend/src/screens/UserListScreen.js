@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react'
-import { LinkContainer } from 'react-router-bootstrap'
-import { Table, Button } from 'react-bootstrap'
+import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import Message from '../components/Message'
-import Loader from '../components/Loader'
+import EmptyState from '../components/EmptyState'
+import DataTable from '../components/ui/DataTable'
+import Badge from '../components/ui/Badge'
 import { listUsers, deleteUser } from '../actions/userActions'
+import './admin-page.css'
 
 const UserListScreen = ({ history }) => {
   const dispatch = useDispatch()
@@ -32,59 +34,47 @@ const UserListScreen = ({ history }) => {
     }
   }
 
+  const columns = [
+    { key: 'id',     header: 'ID',    mono: true,
+      render: (u) => u._id },
+    { key: 'name',   header: 'Name',
+      render: (u) => u.name },
+    { key: 'email',  header: 'Email',
+      render: (u) => <a href={`mailto:${u.email}`}>{u.email}</a> },
+    { key: 'admin',  header: 'Admin', align: 'center',
+      render: (u) => u.isAdmin
+        ? <Badge variant='primary'>ADMIN</Badge>
+        : <Badge variant='default'>USER</Badge> },
+    { key: 'actions', header: '', align: 'right',
+      render: (u) => (
+        <>
+          <Link to={`/admin/user/${u._id}/edit`}
+                className='ui-btn ui-btn--icon ui-btn--ghost'
+                aria-label={`Edit ${u.name}`}>
+            <i className='fas fa-edit' aria-hidden='true' />
+          </Link>
+          <button type='button'
+                  className='ui-btn ui-btn--icon ui-btn--ghost'
+                  onClick={() => deleteHandler(u._id)}
+                  aria-label={`Delete ${u.name}`}>
+            <i className='fas fa-trash' aria-hidden='true' />
+          </button>
+        </>
+      ) },
+  ]
+
   return (
-    <>
-      <h1>Users</h1>
-      {loading ? (
-        <Loader />
-      ) : error ? (
-        <Message variant='danger'>{error}</Message>
-      ) : (
-        <Table striped bordered hover responsive className='table-sm'>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>NAME</th>
-              <th>EMAIL</th>
-              <th>ADMIN</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user._id}>
-                <td>{user._id}</td>
-                <td>{user.name}</td>
-                <td>
-                  <a href={`mailto:${user.email}`}>{user.email}</a>
-                </td>
-                <td>
-                  {user.isAdmin ? (
-                    <i className='fas fa-check' style={{ color: 'green' }}></i>
-                  ) : (
-                    <i className='fas fa-times' style={{ color: 'red' }}></i>
-                  )}
-                </td>
-                <td>
-                  <LinkContainer to={`/admin/user/${user._id}/edit`}>
-                    <Button variant='light' className='btn-sm'>
-                      <i className='fas fa-edit'></i>
-                    </Button>
-                  </LinkContainer>
-                  <Button
-                    variant='danger'
-                    className='btn-sm'
-                    onClick={() => deleteHandler(user._id)}
-                  >
-                    <i className='fas fa-trash'></i>
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
-    </>
+    <div className='admin-page'>
+      <h1 className='admin-page__title'>Users</h1>
+      {error && <Message variant='danger'>{error}</Message>}
+      <DataTable
+        columns={columns}
+        rows={users || []}
+        rowKey='_id'
+        loading={loading}
+        emptyState={<EmptyState heading='No users yet' />}
+      />
+    </div>
   )
 }
 

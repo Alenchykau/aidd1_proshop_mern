@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
 main {
   min-height: 80vh;
 }
@@ -20,34 +22,98 @@ h2 {
   margin: 0.1rem;
 }
 
-/* carousel */
-.carousel-item-next,
-.carousel-item-prev,
-.carousel-item.active {
-  display: flex;
-}
-.carousel-caption {
-  position: absolute;
-  top: 0;
+/* ===========================================================================
+   Design System tokens (DESIGN.md §10).
+   Light is :root default. Dark applies via .dark class on <html>
+   (set by ThemeContext / anti-FOUC script). When the user has not chosen
+   (no data-theme attribute on <html>), prefers-color-scheme:dark fills in.
+   =========================================================================== */
+
+:root {
+  --background:   #FAFAFA;
+  --foreground:   #1A1A1A;
+  --card:         #FFFFFF;
+  --card-alt:     #F0F0F0;
+  --primary:      #4A7000;
+  --primary-fg:   #FFFFFF;
+  --muted:        #666666;
+  --accent:       #4A7000;
+  --destructive:  #D63838;
+  --info:         #1E6FBA;
+  --border:       #E0E0E0;
+  --ring:         #4A7000;
+
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-modal:   0 8px 32px rgba(0, 0, 0, 0.18);
+
+  --space-micro: 4px;
+  --space-xs:    8px;
+  --space-sm:   16px;
+  --space-md:   24px;
+  --space-lg:   32px;
+  --space-xl:   48px;
+  --space-2xl:  64px;
+  --space-3xl:  96px;
+
+  --radius-sm:    4px;
+  --radius-md:    8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
 }
 
-.carousel-caption h2 {
-  color: #fff;
+.dark {
+  --background:   #242424;
+  --foreground:   #F2F2F2;
+  --card:         #2E2E2E;
+  --card-alt:     #383838;
+  --primary:      #C6FF3D;
+  --primary-fg:   #0A0A0A;
+  --muted:        #999999;
+  --accent:       #C6FF3D;
+  --destructive:  #FF6B6B;
+  --info:         #5DA9FF;
+  --border:       #3A3A3A;
+  --ring:         #C6FF3D;
+
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-modal:   0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
-.carousel img {
-  height: 300px;
-  padding: 30px;
-  margin: 40px;
-  border-radius: 50%;
-  margin-left: auto;
-  margin-right: auto;
-}
-.carousel a {
-  margin: 0 auto;
-}
-@media (max-width: 900px) {
-  .carousel-caption h2 {
-    font-size: 2.5vw;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background:   #242424;
+    --foreground:   #F2F2F2;
+    --card:         #2E2E2E;
+    --card-alt:     #383838;
+    --primary:      #C6FF3D;
+    --primary-fg:   #0A0A0A;
+    --muted:        #999999;
+    --accent:       #C6FF3D;
+    --destructive:  #FF6B6B;
+    --info:         #5DA9FF;
+    --border:       #3A3A3A;
+    --ring:         #C6FF3D;
+
+    --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-modal:   0 8px 32px rgba(0, 0, 0, 0.5);
   }
+}
+
+/* Global skeleton-shimmer utility for surface-level loading per DESIGN.md §7. */
+@keyframes app-skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.app-skeleton {
+  display: block;
+  background: linear-gradient(90deg, var(--card-alt) 0%, var(--border) 50%, var(--card-alt) 100%);
+  background-size: 200% 100%;
+  border-radius: var(--radius-sm);
+  animation: app-skeleton-shimmer 1.5s infinite linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-skeleton { animation: none; }
 }

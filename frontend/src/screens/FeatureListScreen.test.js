@@ -102,6 +102,59 @@ describe('FeatureListScreen', () => {
   })
 })
 
+describe('FeatureListScreen — rollback on update failure', () => {
+  it('shows warning and restores prev state when FEATURE_UPDATE_FAIL fires', () => {
+    const store = buildStore(sampleFeatures)
+    const { getByText, rerender, container } = render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <FeatureListScreen history={{ push: jest.fn() }} />
+        </MemoryRouter>
+      </Provider>
+    )
+
+    // cart_redesign starts Disabled. Optimistically flip it Enabled:
+    store.dispatch({
+      type: 'FEATURE_UPDATE_REQUEST',
+      payload: {
+        key: 'cart_redesign',
+        patch: { status: 'Enabled' },
+        prev: sampleFeatures.find((f) => f.key === 'cart_redesign'),
+      },
+    })
+    rerender(
+      <Provider store={store}>
+        <MemoryRouter>
+          <FeatureListScreen history={{ push: jest.fn() }} />
+        </MemoryRouter>
+      </Provider>
+    )
+
+    // Now simulate server failure
+    store.dispatch({
+      type: 'FEATURE_UPDATE_FAIL',
+      payload: {
+        key: 'cart_redesign',
+        prev: sampleFeatures.find((f) => f.key === 'cart_redesign'),
+        error: 'boom',
+      },
+    })
+    rerender(
+      <Provider store={store}>
+        <MemoryRouter>
+          <FeatureListScreen history={{ push: jest.fn() }} />
+        </MemoryRouter>
+      </Provider>
+    )
+
+    // The warning message renders
+    expect(getByText('boom')).toBeInTheDocument()
+    // And the Disabled badge count includes cart_redesign again
+    // (sampleFeatures has exactly one Disabled feature — cart_redesign)
+    expect(container.querySelectorAll('.fd-badge--disabled').length).toBe(1)
+  })
+})
+
 describe('FeatureListScreen — persistence wiring', () => {
   beforeEach(() => {
     updateFeature.mockClear()

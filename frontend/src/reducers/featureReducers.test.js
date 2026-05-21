@@ -3,8 +3,9 @@ import {
   FEATURE_LIST_REQUEST,
   FEATURE_LIST_SUCCESS,
   FEATURE_LIST_FAIL,
-  FEATURE_TOGGLE,
-  FEATURE_TRAFFIC_UPDATE,
+  FEATURE_UPDATE_REQUEST,
+  FEATURE_UPDATE_SUCCESS,
+  FEATURE_UPDATE_FAIL,
 } from '../constants/featureConstants'
 
 const sampleFeatures = [
@@ -31,104 +32,163 @@ const sampleFeatures = [
   },
 ]
 
+const initialState = {
+  loading: false,
+  features: [],
+  error: null,
+  updatingKey: null,
+  updateError: null,
+}
+
 describe('featureListReducer', () => {
   it('returns initial state for unknown action', () => {
     const state = featureListReducer(undefined, { type: 'OTHER' })
-    expect(state).toEqual({ features: [] })
+    expect(state).toEqual(initialState)
   })
 
   it('handles FEATURE_LIST_REQUEST', () => {
     const state = featureListReducer(undefined, { type: FEATURE_LIST_REQUEST })
-    expect(state).toEqual({ loading: true, features: [] })
+    expect(state.loading).toBe(true)
+    expect(state.features).toEqual([])
+    expect(state.error).toBeNull()
   })
 
   it('handles FEATURE_LIST_SUCCESS', () => {
     const state = featureListReducer(
-      { loading: true, features: [] },
+      { ...initialState, loading: true },
       { type: FEATURE_LIST_SUCCESS, payload: sampleFeatures }
     )
-    expect(state).toEqual({ loading: false, features: sampleFeatures })
+    expect(state.loading).toBe(false)
+    expect(state.features).toEqual(sampleFeatures)
+    expect(state.error).toBeNull()
   })
 
   it('handles FEATURE_LIST_FAIL', () => {
     const state = featureListReducer(
-      { loading: true, features: [] },
+      { ...initialState, loading: true },
       { type: FEATURE_LIST_FAIL, payload: 'boom' }
     )
-    expect(state).toEqual({ loading: false, features: [], error: 'boom' })
+    expect(state.loading).toBe(false)
+    expect(state.error).toBe('boom')
   })
 
-  describe('FEATURE_TOGGLE', () => {
-    const today = new Date().toISOString().slice(0, 10)
-
-    it('flips Disabled to Enabled', () => {
+  describe('FEATURE_UPDATE_REQUEST', () => {
+    it('optimistically applies status patch and sets updatingKey', () => {
       const state = featureListReducer(
-        { loading: false, features: sampleFeatures },
-        { type: FEATURE_TOGGLE, payload: { key: 'cart_redesign' } }
+        { ...initialState, features: sampleFeatures },
+        {
+          type: FEATURE_UPDATE_REQUEST,
+          payload: {
+            key: 'cart_redesign',
+            patch: { status: 'Enabled' },
+            prev: sampleFeatures[1],
+          },
+        }
       )
       const target = state.features.find((f) => f.key === 'cart_redesign')
       expect(target.status).toBe('Enabled')
-      expect(target.last_modified).toBe(today)
+      expect(state.updatingKey).toBe('cart_redesign')
+      expect(state.updateError).toBeNull()
     })
 
-    it('flips Enabled to Disabled', () => {
+    it('optimistically applies traffic patch', () => {
       const state = featureListReducer(
-        { loading: false, features: sampleFeatures },
-        { type: FEATURE_TOGGLE, payload: { key: 'paypal_express_buttons' } }
-      )
-      const target = state.features.find(
-        (f) => f.key === 'paypal_express_buttons'
-      )
-      expect(target.status).toBe('Disabled')
-      expect(target.last_modified).toBe(today)
-    })
-
-    it('flips Testing to Disabled', () => {
-      const state = featureListReducer(
-        { loading: false, features: sampleFeatures },
-        { type: FEATURE_TOGGLE, payload: { key: 'search_v2' } }
-      )
-      const target = state.features.find((f) => f.key === 'search_v2')
-      expect(target.status).toBe('Disabled')
-      expect(target.last_modified).toBe(today)
-    })
-
-    it('does not touch other features', () => {
-      const state = featureListReducer(
-        { loading: false, features: sampleFeatures },
-        { type: FEATURE_TOGGLE, payload: { key: 'search_v2' } }
-      )
-      const other = state.features.find((f) => f.key === 'cart_redesign')
-      expect(other).toEqual(sampleFeatures[1])
-    })
-  })
-
-  describe('FEATURE_TRAFFIC_UPDATE', () => {
-    const today = new Date().toISOString().slice(0, 10)
-
-    it('updates traffic_percentage and last_modified for the targeted feature', () => {
-      const state = featureListReducer(
-        { loading: false, features: sampleFeatures },
+        { ...initialState, features: sampleFeatures },
         {
-          type: FEATURE_TRAFFIC_UPDATE,
-          payload: { key: 'search_v2', traffic_percentage: 75 },
+          type: FEATURE_UPDATE_REQUEST,
+          payload: {
+            key: 'search_v2',
+            patch: { traffic_percentage: 75 },
+            prev: sampleFeatures[0],
+          },
         }
       )
       const target = state.features.find((f) => f.key === 'search_v2')
       expect(target.traffic_percentage).toBe(75)
-      expect(target.last_modified).toBe(today)
+      expect(state.updatingKey).toBe('search_v2')
     })
 
     it('does not touch other features', () => {
       const state = featureListReducer(
-        { loading: false, features: sampleFeatures },
+        { ...initialState, features: sampleFeatures },
         {
-          type: FEATURE_TRAFFIC_UPDATE,
-          payload: { key: 'search_v2', traffic_percentage: 75 },
+          type: FEATURE_UPDATE_REQUEST,
+          payload: {
+            key: 'search_v2',
+            patch: { traffic_percentage: 75 },
+            prev: sampleFeatures[0],
+          },
         }
       )
       const other = state.features.find((f) => f.key === 'cart_redesign')
       expect(other).toEqual(sampleFeatures[1])
+    })
+
+    it('clears prior updateError on a new request', () => {
+      const state = featureListReducer(
+        { ...initialState, features: sampleFeatures, updateError: 'stale' },
+        {
+          type: FEATURE_UPDATE_REQUEST,
+          payload: {
+            key: 'search_v2',
+            patch: { traffic_percentage: 50 },
+            prev: sampleFeatures[0],
+          },
+        }
+      )
+      expect(state.updateError).toBeNull()
+    })
+  })
+
+  describe('FEATURE_UPDATE_SUCCESS', () => {
+    it('replaces the feature with the server payload and clears updatingKey', () => {
+      const serverResponse = {
+        key: 'search_v2',
+        name: 'New Search Algorithm',
+        status: 'Testing',
+        traffic_percentage: 75,
+        last_modified: '2026-05-13',
+      }
+      const state = featureListReducer(
+        {
+          ...initialState,
+          features: sampleFeatures,
+          updatingKey: 'search_v2',
+        },
+        { type: FEATURE_UPDATE_SUCCESS, payload: serverResponse }
+      )
+      const target = state.features.find((f) => f.key === 'search_v2')
+      expect(target).toEqual(serverResponse)
+      expect(state.updatingKey).toBeNull()
+      expect(state.updateError).toBeNull()
+    })
+  })
+
+  describe('FEATURE_UPDATE_FAIL', () => {
+    it('restores prev state, clears updatingKey, sets updateError', () => {
+      const optimisticFeatures = sampleFeatures.map((f) =>
+        f.key === 'cart_redesign' ? { ...f, status: 'Enabled' } : f
+      )
+      const state = featureListReducer(
+        {
+          ...initialState,
+          features: optimisticFeatures,
+          updatingKey: 'cart_redesign',
+        },
+        {
+          type: FEATURE_UPDATE_FAIL,
+          payload: {
+            key: 'cart_redesign',
+            prev: sampleFeatures[1],
+            error: 'boom',
+          },
+        }
+      )
+      const target = state.features.find((f) => f.key === 'cart_redesign')
+      expect(target).toEqual(sampleFeatures[1])
+      expect(target.status).toBe('Disabled')
+      expect(state.updatingKey).toBeNull()
+      expect(state.updateError).toBe('boom')
     })
   })
 })
