@@ -300,6 +300,169 @@
   transition: opacity 120ms ease-in-out;
 }
 
+/* ---------- Auto-Pilot trigger (table cell) ---------- */
+.feature-dashboard .fd-ap-trigger {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease,
+    color 150ms ease;
+}
+.feature-dashboard .fd-ap-trigger:hover {
+  background: var(--card-alt);
+  border-color: var(--foreground);
+}
+.feature-dashboard .fd-ap-trigger[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.feature-dashboard .fd-ap-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 35%, transparent);
+}
+.feature-dashboard .fd-th-autopilot,
+.feature-dashboard .fd-ap-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---------- Auto-Pilot row (expansion) ---------- */
+.feature-dashboard .fd-ap-row > td {
+  background: var(--card-alt);
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.feature-dashboard .fd-ap-row:hover > td {
+  background: var(--card-alt);
+}
+
+/* ---------- Auto-Pilot card ---------- */
+.feature-dashboard .fd-ap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+.feature-dashboard .fd-ap-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.feature-dashboard .fd-ap-title {
+  margin: 0;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--foreground);
+}
+.feature-dashboard .fd-ap-feature {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+.feature-dashboard .fd-ap-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------- Auto-Pilot buttons ---------- */
+.feature-dashboard .fd-ap-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 150ms ease, background-color 150ms ease,
+    border-color 150ms ease, transform 80ms ease;
+}
+.feature-dashboard .fd-ap-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.feature-dashboard .fd-ap-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 40%, transparent);
+}
+.feature-dashboard .fd-ap-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.feature-dashboard .fd-ap-btn--secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--foreground);
+}
+.feature-dashboard .fd-ap-btn--secondary:hover:not(:disabled) {
+  background: var(--card-alt);
+  border-color: var(--foreground);
+}
+.feature-dashboard .fd-ap-btn--info {
+  background: var(--info);
+  color: #FFFFFF;
+}
+.feature-dashboard .fd-ap-btn--info:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.feature-dashboard .fd-ap-btn--danger {
+  background: var(--destructive);
+  color: #FFFFFF;
+}
+.feature-dashboard .fd-ap-btn--danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* ---------- Auto-Pilot spinner ---------- */
+.feature-dashboard .fd-ap-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: fd-ap-spin 0.6s linear infinite;
+}
+@keyframes fd-ap-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Auto-Pilot alert ---------- */
+.feature-dashboard .fd-ap-alert {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+}
+.feature-dashboard .fd-ap-alert--success {
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  color: var(--foreground);
+}
+.feature-dashboard .fd-ap-alert--error {
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+  border-color: color-mix(in srgb, var(--destructive) 40%, transparent);
+  color: var(--destructive);
+}
+
 /* ---------- Reduced motion (per DESIGN.md §8) ---------- */
 @media (prefers-reduced-motion: reduce) {
   .feature-dashboard *,

@@ -40,3 +40,6 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+
+# n8n local data (sqlite db, encryption key, workflows, credentials)
+n8n-data/

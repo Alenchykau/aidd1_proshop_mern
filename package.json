@@ -13,6 +13,10 @@
     "data:destroy": "node backend/seeder -d",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend"
   },
+  "nodemonConfig": {
+    "watch": ["backend"],
+    "ext": "js,mjs,json"
+  },
   "author": "Brad Traversy",
   "license": "MIT",
   "dependencies": {

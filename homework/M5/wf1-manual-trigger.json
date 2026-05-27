@@ -1,0 +1,420 @@
+{
+  "name": "wf1-manual-trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "feature-control",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "45804f54-c1ce-40e3-b304-e8571f9b4e1f",
+      "name": "Webhook",
+      "webhookId": "24c141e7-cfed-45f7-8357-9fcd3a888b67",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "FmpCIwlvixq9p7sO",
+          "name": "n8n-feature-control-api-key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.feature_id }}",
+                    "rightValue": "=={{ $json.feature_id }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "id": "bd7148e2-2b88-469f-81e7-ab6191658b70"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "missing_feature_id"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3b0ae02f-4124-4a05-b2d9-785c1269c081",
+                    "leftValue": "={{ $json.body.action }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "missing_action"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3dbd7350-173c-4bf4-9e64-aa2ea6ab5bd6",
+                    "leftValue": "={{ ['check','test','rollback','rollout'].includes($json.body.action) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "invalid_action"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1860d89e-27c9-4a59-8c33-b21f2ddaee20",
+                    "leftValue": "={{ $json.body.traffic_percentage !== undefined && ($json.body.traffic_percentage < 0 || $json.body.traffic_percentage > 100) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "invalid_traffic"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "4b7acf66-0e97-4161-90cb-5543f5a3aef1",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\": false, \"message\": \"Validation error\", \"rejected_at\": \"input-validation\"}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        560,
+        -32
+      ],
+      "id": "a45bcb43-6a6d-47e6-97ba-e99f232a269d",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Смотри system message",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Goal:\nВыполни запрос пользователя по управлению feature flag {{$json.body.feature_id}}.\n\nContext:\n- Текущее состояние feature flag получи через get_feature_info ПЕРЕД любыми изменениями.\n- Команда от UI: action={{$json.body.action}}, target_state={{$json.body.target_state}}, traffic_percentage={{$json.body.traffic_percentage}}.\n- Доступные actions: \"check\" (только чтение), \"test\" (перевести в Testing), \"rollback\" (Disabled), \"rollout\" (изменить traffic_percentage).\n- Available tools: get_feature_info, set_feature_state, adjust_traffic_rollout.\n\nAction:\n1. Если action=\"check\" — вызови get_feature_info и верни результат.\n2. Если action=\"test\" — get_feature_info → проверь что фича не Enabled → set_feature_state(Testing) → get_feature_info для верификации.\n3. Если action=\"rollback\" — get_feature_info → если уже Disabled, верни no_op → иначе set_feature_state(Disabled) → get_feature_info.\n4. Если action=\"rollout\" — get_feature_info → adjust_traffic_rollout(traffic_percentage) → get_feature_info.\n5. На любом шаге если invalid params (например, traffic_percentage не передан для action=\"rollout\") — верни ошибку без вызова инструментов.\n\nOutput:\nJSON строго по схеме:\n{\n  \"success\": boolean,\n  \"message\": string (краткое описание результата на русском, 1 предложение),\n  \"current_state\": {\n    \"id\": string,\n    \"name\": string,\n    \"status\": \"Enabled\" | \"Disabled\" | \"Testing\",\n    \"traffic_percentage\": number,\n    \"last_modified\": string (ISO 8601)\n  } | null,\n  \"rejected_at\": \"input-validation\" | \"tool-execution\" | null\n}\n\nConstraints:\n- traffic_percentage в диапазоне [0, 100]. Если получен -50 или 150 — отказ с message объяснения.\n- target_state из enum [Enabled, Disabled, Testing]. Если другое — отказ.\n- НЕ вызывай set_feature_state повторно если current_state.status уже соответствует целевому.\n- Если ошибка от MCP-инструмента — верни success=false с message от инструмента.",
+          "maxIterations": 5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        608,
+        256
+      ],
+      "id": "8bd48d2e-af3b-4cc4-bb02-4b2523924228",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        464
+      ],
+      "id": "5d5acd05-2164-4e74-bc24-1e0ce7ade17e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "TrQsMPb12KBxPiZD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.feature_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        592,
+        464
+      ],
+      "id": "f68e4af0-4b9b-4822-9935-cc48ec1689bd",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://localhost:5680/mcp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        480
+      ],
+      "id": "a3f8c2ce-84ab-4284-b59d-400370e8ba13",
+      "name": "MCP Client"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n    \"type\": \"object\",\n    \"required\": [\"success\", \"message\"],\n    \"properties\": {\n      \"success\": { \"type\": \"boolean\" },\n      \"message\": { \"type\": \"string\" },\n      \"current_state\": {\n        \"type\": \"object\",\n        \"nullable\": true,\n        \"properties\": {\n          \"feature_name\": { \"type\": \"string\" },\n          \"name\":         { \"type\": \"string\" },\n          \"status\":       { \"type\": \"string\", \"enum\": [\"Enabled\", \"Disabled\", \"Testing\"] },\n          \"traffic_percentage\": { \"type\": \"number\" },\n          \"last_modified\":      { \"type\": \"string\" }\n        }\n      },\n      \"rejected_at\": {\n        \"type\": \"string\",\n        \"nullable\": true,\n        \"enum\": [\"input-validation\", \"tool-execution\"]\n      }\n    }\n  }"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        512
+      ],
+      "id": "4a1646e2-86a5-4653-b956-89a88810f317",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        944,
+        256
+      ],
+      "id": "d5df3a1b-7181-490e-8420-7689d0ae3c90",
+      "name": "Respond to Webhook1"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "localhost:5678",
+            "connection": "keep-alive",
+            "content-length": "67",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\"",
+            "content-type": "application/json",
+            "x-api-key": "3c041231cbc885addc98cb7cac5e0438dab7e9ef3cc6d8f906e3faa94476cb2b",
+            "sec-ch-ua-mobile": "?0",
+            "accept": "*/*",
+            "origin": "http://localhost:3000",
+            "sec-fetch-site": "same-site",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "empty",
+            "referer": "http://localhost:3000/",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,be;q=0.6"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "feature_id": "search_v2",
+            "action": "test",
+            "target_state": "Testing"
+          },
+          "webhookUrl": "http://localhost:5678/webhook/feature-control",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bb4c31ba-dedc-47db-9925-c60b1611e105",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6f11843a176756a827f940830983cc3a2a8aa527e5f375997297575c685f6b92"
+  },
+  "id": "yavppX2beuw1vnKf",
+  "tags": []
+}

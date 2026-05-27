@@ -1,0 +1,599 @@
+workflow_name: wf2-scheduled-monitor
+description: >-
+  Scheduled (every 1 minute) defensive monitor for the search_v2 feature flag.
+  Reads logs.json (produced by simulate_wf2.py) for the last 60 seconds,
+  computes error_rate, fetches current feature status via MCP, decides
+  algorithmically (Switch) whether to deactivate / re-enable / no-op,
+  then delegates the MCP write + Telegram alert composition to a Tools AI Agent.
+  Algorithm-before-AI: decisions are made by the Switch, the agent only executes
+  and formats the alert.
+
+trigger:
+  node_type: n8n-nodes-base.scheduleTrigger
+  config:
+    rule:
+      interval:
+        - field: minutes
+          minutesInterval: 1
+
+nodes:
+  - id: schedule_trigger
+    node_type: n8n-nodes-base.scheduleTrigger
+    purpose: Fires every 1 minute to start a monitoring cycle.
+    config:
+      rule:
+        interval:
+          - field: minutes
+            minutesInterval: 1
+    depends_on: null
+    on_error: stop
+
+  - id: read_and_analyze_logs
+    node_type: n8n-nodes-base.code
+    purpose: >-
+      Reads logs.json from disk, filters events from the last 60 seconds,
+      and computes error_rate / total / errors for feature_id=search_v2.
+    config:
+      language: javaScript
+      jsCode: |
+        const fs = require('fs');
+        // Use forward slashes to avoid backslash escaping on Windows.
+        const path = 'D:/HS/dev/aidd_course/aidd1_proshop_mern/homework/M5/logs.json';
+
+        let data = [];
+        try {
+          data = JSON.parse(fs.readFileSync(path, 'utf-8'));
+        } catch (e) {
+          // File may not yet exist or be mid-write — treat as empty window.
+          data = [];
+        }
+
+        const feature_id = 'search_v2';
+        const now = Date.now();
+        const window_ms = 60 * 1000; // last 60 seconds
+
+        const recent = data.filter((e) => {
+          const ts = new Date(e.timestamp).getTime();
+          return Number.isFinite(ts)
+            && (now - ts) < window_ms
+            && (!e.feature_id || e.feature_id === feature_id);
+        });
+
+        const total = recent.length;
+        const errors = recent.filter((e) => e.status === 'error').length;
+        const error_rate = total > 0 ? errors / total : 0;
+
+        return [{
+          json: {
+            feature_id,
+            error_rate,
+            total,
+            errors,
+          },
+        }];
+    depends_on: [schedule_trigger]
+    on_error: continue
+
+  - id: get_feature_status
+    node_type: n8n-nodes-base.httpRequest
+    purpose: >-
+      Calls the MCP feature-flags server (Streamable HTTP) to fetch the
+      current status of search_v2 via the get_feature_info tool. Uses JSON-RPC
+      tools/call envelope as required by the MCP HTTP endpoint.
+    config:
+      method: POST
+      url: http://localhost:5680/mcp
+      sendHeaders: true
+      headerParameters:
+        parameters:
+          - name: Accept
+            value: application/json, text/event-stream
+          - name: Content-Type
+            value: application/json
+      sendBody: true
+      contentType: json
+      specifyBody: json
+      jsonBody: |-
+        ={{ JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: "get_feature_info",
+            arguments: { feature_name: $json.feature_id }
+          }
+        }) }}
+      options:
+        response:
+          response:
+            responseFormat: json
+            neverError: true
+    depends_on: [read_and_analyze_logs]
+    on_error: continue
+
+  - id: merge_data
+    node_type: n8n-nodes-base.code
+    purpose: >-
+      Merges window stats with the MCP get_feature_info response into a single
+      flat $json object that the Switch can evaluate without cross-node refs.
+      Robustly extracts feature.status from the MCP tools/call envelope
+      (result.content[0].text is a JSON string).
+    config:
+      language: javaScript
+      jsCode: |
+        const stats = $('read_and_analyze_logs').item.json;
+        const httpResp = $('get_feature_status').item.json ?? {};
+
+        // MCP tools/call response: { result: { content: [ { type: 'text', text: '<json>' } ] } }
+        let toolPayload = {};
+        try {
+          const text = httpResp?.result?.content?.[0]?.text;
+          if (text) toolPayload = JSON.parse(text);
+        } catch (e) {
+          toolPayload = { error: 'PARSE_ERROR', message: e.message };
+        }
+
+        const current_status = toolPayload.status ?? null;
+        const traffic_percentage = toolPayload.traffic_percentage ?? null;
+
+        return [{
+          json: {
+            feature_id: stats.feature_id,
+            error_rate: stats.error_rate,
+            total: stats.total,
+            errors: stats.errors,
+            current_status,
+            traffic_percentage,
+            mcp_error: toolPayload.error ?? null,
+          },
+        }];
+    depends_on: [get_feature_status]
+    on_error: continue
+
+  - id: decision_switch
+    node_type: n8n-nodes-base.switch
+    purpose: >-
+      Algorithm-before-AI decision. Routes the cycle to deactivate / reenable /
+      no-op outputs strictly by thresholds — the agent never makes the decision.
+    config:
+      mode: rules
+      rules:
+        values:
+          - outputKey: deactivate
+            conditions:
+              combinator: and
+              options:
+                caseSensitive: true
+                typeValidation: strict
+              conditions:
+                - leftValue: "={{ $json.error_rate }}"
+                  rightValue: 0.05
+                  operator:
+                    type: number
+                    operation: gt
+                - leftValue: "={{ $json.current_status }}"
+                  rightValue: Disabled
+                  operator:
+                    type: string
+                    operation: notEquals
+          - outputKey: reenable
+            conditions:
+              combinator: and
+              options:
+                caseSensitive: true
+                typeValidation: strict
+              conditions:
+                - leftValue: "={{ $json.error_rate }}"
+                  rightValue: 0.01
+                  operator:
+                    type: number
+                    operation: lt
+                - leftValue: "={{ $json.current_status }}"
+                  rightValue: Disabled
+                  operator:
+                    type: string
+                    operation: equals
+      options:
+        fallbackOutput: extra
+    depends_on: [merge_data]
+    on_error: continue
+
+  - id: set_decision_deactivate
+    node_type: n8n-nodes-base.set
+    purpose: >-
+      Tags the cycle with decision="deactivate" and forwards the analysis
+      payload to the AI Agent (so the agent reads the decision from $json).
+    config:
+      mode: manual
+      includeOtherFields: true
+      assignments:
+        assignments:
+          - name: decision
+            type: string
+            value: deactivate
+    depends_on: [decision_switch]
+    on_error: continue
+
+  - id: set_decision_reenable
+    node_type: n8n-nodes-base.set
+    purpose: >-
+      Tags the cycle with decision="reenable" and forwards the analysis
+      payload to the AI Agent.
+    config:
+      mode: manual
+      includeOtherFields: true
+      assignments:
+        assignments:
+          - name: decision
+            type: string
+            value: reenable
+    depends_on: [decision_switch]
+    on_error: continue
+
+  - id: noop_within_threshold
+    node_type: n8n-nodes-base.noOp
+    purpose: >-
+      Terminates the fallback (within-threshold) branch silently. Keeps the
+      execution trace clean. Telegram is intentionally NOT wired here.
+    config: {}
+    depends_on: [decision_switch]
+    on_error: stop
+
+  - id: ai_agent_monitor
+    node_type: "@n8n/n8n-nodes-langchain.agent"
+    purpose: >-
+      Tools Agent that executes the upstream decision (deactivate | reenable)
+      against the feature-flags MCP and composes a Russian Telegram alert.
+      Receives BOTH set_decision_deactivate and set_decision_reenable as main inputs.
+    config:
+      promptType: define
+      text: |-
+        ={{ JSON.stringify({
+          feature_id: $json.feature_id,
+          error_rate: $json.error_rate,
+          total: $json.total,
+          current_status: $json.current_status,
+          decision: $json.decision
+        }) }}
+      options:
+        systemMessage: "={{ $vars.GCAO_SYSTEM_PROMPT }}"
+        maxIterations: 3
+        returnIntermediateSteps: false
+    depends_on: [set_decision_deactivate, set_decision_reenable]
+    on_error: continue
+
+  - id: chat_model_gemini
+    node_type: "@n8n/n8n-nodes-langchain.lmChatGoogleGemini"
+    purpose: Provides the Chat Model sub-node for the AI Agent.
+    config:
+      modelName: models/gemini-2.5-flash
+      options:
+        temperature: 0.2
+    depends_on: []
+    on_error: stop
+
+  - id: mcp_client_tool
+    node_type: "@n8n/n8n-nodes-langchain.mcpClientTool"
+    purpose: >-
+      Exposes feature-flags MCP tools (get_feature_info, set_feature_state,
+      adjust_traffic_rollout, list_features) to the AI Agent over Streamable HTTP.
+    config:
+      endpointUrl: http://localhost:5680/mcp
+      serverTransport: streamableHttp
+      authentication: none
+      includeTools:
+        - get_feature_info
+        - set_feature_state
+    depends_on: []
+    on_error: continue
+
+  - id: structured_output_parser
+    node_type: "@n8n/n8n-nodes-langchain.outputParserStructured"
+    purpose: >-
+      Forces the agent to emit a strict JSON envelope used by the Telegram node
+      and any downstream analytics. Gemini-compatible schema (no type unions).
+    config:
+      schemaType: manual
+      inputSchema: |-
+        {
+          "type": "object",
+          "required": ["action_taken", "alert_message", "error_rate_percent", "threshold_used"],
+          "properties": {
+            "action_taken": {
+              "type": "string",
+              "enum": ["deactivated", "reenabled", "no_op", "error"]
+            },
+            "previous_state": {
+              "type": "object",
+              "nullable": true,
+              "properties": {
+                "status": { "type": "string" },
+                "traffic_percentage": { "type": "number" }
+              }
+            },
+            "new_state": {
+              "type": "object",
+              "nullable": true,
+              "properties": {
+                "status": { "type": "string" },
+                "traffic_percentage": { "type": "number" }
+              }
+            },
+            "alert_message": { "type": "string" },
+            "error_rate_percent": { "type": "number" },
+            "threshold_used": { "type": "number" },
+            "reason": { "type": "string", "nullable": true }
+          }
+        }
+    depends_on: []
+    on_error: stop
+
+  - id: telegram_alert
+    node_type: n8n-nodes-base.telegram
+    purpose: >-
+      Sends the agent-composed alert_message to the configured Telegram chat.
+      Wired ONLY to the AI Agent main output — the NoOp branch is silent.
+    config:
+      operation: sendMessage
+      chatId: "={{ $env.TELEGRAM_CHAT_ID }}"
+      text: "={{ $json.output.alert_message }}"
+      additionalFields:
+        parse_mode: HTML
+    depends_on: [ai_agent_monitor]
+    on_error: continue
+
+ai_agent_config:
+  agent_node_id: ai_agent_monitor
+  model:
+    type: googleGemini
+    name: gemini-2.5-flash
+  memory:
+    enabled: false
+    note: >-
+      Intentionally disabled. Cron execution is stateless; history between
+      minute-ticks is not useful and would waste tokens.
+  tools:
+    - type: mcp-client
+      mcp_endpoint: http://localhost:5680/mcp
+      transport: streamableHttp
+      exposed_tools:
+        - get_feature_info
+        - set_feature_state
+  output_parser:
+    enabled: true
+    schema: |
+      {
+        "type": "object",
+        "required": ["action_taken", "alert_message", "error_rate_percent", "threshold_used"],
+        "properties": {
+          "action_taken": {
+            "type": "string",
+            "enum": ["deactivated", "reenabled", "no_op", "error"]
+          },
+          "previous_state": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "status": { "type": "string" },
+              "traffic_percentage": { "type": "number" }
+            }
+          },
+          "new_state": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "status": { "type": "string" },
+              "traffic_percentage": { "type": "number" }
+            }
+          },
+          "alert_message": { "type": "string" },
+          "error_rate_percent": { "type": "number" },
+          "threshold_used": { "type": "number" },
+          "reason": { "type": "string", "nullable": true }
+        }
+      }
+  system_prompt: |
+    Goal:
+    Зарегистрировать инцидент или recovery для feature {{ $json.feature_id }}.
+    Текущий error rate: {{ $json.error_rate }} (threshold deactivate: 5%, threshold re-enable: 1%).
+    Текущее состояние: {{ $json.current_status }}.
+    Decision из upstream: {{ $json.decision }} (deactivate | reenable | noop).
+
+    Context:
+    - Decision уже посчитан upstream (в Switch-ноде) — твоя задача выполнить решение через MCP.
+    - Available tools: get_feature_info, set_feature_state.
+    - Схемы MCP tools (источник истины — mcp-feature-flags/server.ts):
+        * get_feature_info({ feature_name: string })
+        * set_feature_state({ feature_name: string, state: "Disabled" | "Testing" | "Enabled" })
+      ВНИМАНИЕ: параметр называется state, не target_state. Передавай ровно "Disabled" / "Testing" / "Enabled" (case-sensitive).
+    - Threshold deactivate = 5%, re-enable = 1%. При decision=deactivate фича сейчас не Disabled. При decision=reenable фича сейчас Disabled.
+    - НЕ принимай решение самостоятельно: следуй decision из payload. Это и есть Algorithm-before-AI — guards снаружи модели.
+
+    Action:
+    1. Вызови get_feature_info({ feature_name: "{{ $json.feature_id }}" }) для актуального state (на случай гонки между Switch и AI Agent).
+    2. Если decision="deactivate":
+       - Проверь что status != "Disabled". Если уже Disabled — верни action_taken="no_op", reason="already_disabled" (защита от спама).
+       - Иначе вызови set_feature_state({ feature_name: "{{ $json.feature_id }}", state: "Disabled" }).
+       - Снова get_feature_info для верификации.
+    3. Если decision="reenable":
+       - Проверь что status == "Disabled". Если уже Enabled — верни action_taken="no_op", reason="already_enabled".
+       - Иначе вызови set_feature_state({ feature_name: "{{ $json.feature_id }}", state: "Enabled" }).
+       - Снова get_feature_info для верификации.
+    4. Если decision="noop" — ничего не делать, верни action_taken="no_op", reason="within_threshold".
+    5. Сформируй короткий русский alert_message для Telegram.
+
+    Output:
+    JSON строго по схеме (Structured Output Parser):
+    {
+      "action_taken": "deactivated" | "reenabled" | "no_op" | "error",
+      "previous_state": object | null,
+      "new_state": object | null,
+      "alert_message": string (1-2 предложения для Telegram),
+      "error_rate_percent": number,
+      "threshold_used": number,
+      "reason": string | null
+    }
+
+    Constraints:
+    - alert_message:
+      - deactivate: "🚨 Feature {{name}} деактивирована: error rate {{X}}% превысил порог {{Y}}%."
+      - reenable:   "✅ Feature {{name}} восстановлена: error rate {{X}}% упал ниже {{Y}}%."
+      - no_op:      "ℹ️ Feature {{name}} — без изменений (error rate {{X}}%, статус {{S}})."
+    - НЕ вызывай set_feature_state если state уже соответствует целевому (no-op guard).
+    - Параметр инструмента — state, не target_state. percentage (если когда-то понадобится adjust_traffic_rollout) — integer 0..100, не traffic_percentage.
+    - При ошибке от MCP — action_taken="error" с reason содержащим сообщение от инструмента.
+    - error_rate_percent = round(error_rate * 100, 1). threshold_used = 5 для deactivate, 1 для reenable, 5 для no_op.
+    - Telegram-сообщение отправляется только на main output AI Agent. NoOp ветка молчит (это уже обеспечено upstream — агент в noop-ветке не вызывается).
+
+connections:
+  - from: schedule_trigger
+    from_output: main
+    to: read_and_analyze_logs
+    to_input: main
+
+  - from: read_and_analyze_logs
+    from_output: main
+    to: get_feature_status
+    to_input: main
+
+  - from: get_feature_status
+    from_output: main
+    to: merge_data
+    to_input: main
+
+  - from: merge_data
+    from_output: main
+    to: decision_switch
+    to_input: main
+
+  # Switch output 0 (deactivate)
+  - from: decision_switch
+    from_output: main
+    from_output_index: 0
+    to: set_decision_deactivate
+    to_input: main
+
+  # Switch output 1 (reenable)
+  - from: decision_switch
+    from_output: main
+    from_output_index: 1
+    to: set_decision_reenable
+    to_input: main
+
+  # Switch fallback (extra) → NoOp, no Telegram
+  - from: decision_switch
+    from_output: main
+    from_output_index: 2
+    to: noop_within_threshold
+    to_input: main
+
+  - from: set_decision_deactivate
+    from_output: main
+    to: ai_agent_monitor
+    to_input: main
+
+  - from: set_decision_reenable
+    from_output: main
+    to: ai_agent_monitor
+    to_input: main
+
+  # Sub-nodes for the AI Agent
+  - from: chat_model_gemini
+    from_output: ai_languageModel
+    to: ai_agent_monitor
+    to_input: ai_languageModel
+
+  - from: mcp_client_tool
+    from_output: ai_tool
+    to: ai_agent_monitor
+    to_input: ai_tool
+
+  - from: structured_output_parser
+    from_output: ai_outputParser
+    to: ai_agent_monitor
+    to_input: ai_outputParser
+
+  # Telegram on main output of the agent only
+  - from: ai_agent_monitor
+    from_output: main
+    to: telegram_alert
+    to_input: main
+
+credentials_needed:
+  - name: Google Gemini (PaLM) API
+    type: googlePalmApi
+    note: >-
+      Required for the lmChatGoogleGemini sub-node. Provide a Google AI Studio
+      API key with access to gemini-2.5-flash.
+  - name: Telegram Bot API
+    type: telegramApi
+    note: >-
+      Bot token from @BotFather. The bot must be added to the target chat;
+      set TELEGRAM_CHAT_ID env var on the n8n host (used by the telegram node).
+  - name: MCP feature-flags (no auth)
+    type: none
+    note: >-
+      The MCP server at http://localhost:5680/mcp is currently unauthenticated.
+      Make sure `npm run mcp:http` (or equivalent) is running before the cron
+      starts, and that n8n can reach localhost:5680. If you later add bearer
+      auth — switch the MCP Client Tool authentication to headerAuth and add
+      an httpHeaderAuth credential.
+
+edge_cases:
+  - case: logs.json missing or unreadable at cycle start.
+    handling: >-
+      Code node read_and_analyze_logs catches the exception and treats the
+      window as empty (total=0, error_rate=0). Switch fallback → NoOp → silent.
+  - case: Empty window (total=0 within the last 60s).
+    handling: >-
+      error_rate=0 → Switch fallback (within threshold) → NoOp. No Telegram spam.
+  - case: MCP get_feature_info fails or returns FEATURE_NOT_FOUND.
+    handling: >-
+      merge_data sets current_status=null and mcp_error=<reason>. With
+      current_status=null, neither Switch rule matches → fallback → NoOp.
+      Cycle is skipped; next minute retries.
+  - case: Race between Switch and AI Agent (status changed in the meantime).
+    handling: >-
+      Agent re-fetches via get_feature_info as Action step 1. If state already
+      matches the target — emits action_taken="no_op" with reason=already_*.
+  - case: MCP set_feature_state returns DEPENDENCY_NOT_ENABLED on reenable.
+    handling: >-
+      Agent catches the tool error and returns action_taken="error" with the
+      MCP message in reason. Telegram still fires (main output) so the operator
+      sees the failure.
+  - case: Within-threshold cycle (1% <= error_rate <= 5%, or any cycle whose
+      conditions don't match deactivate/reenable).
+    handling: >-
+      Switch fallback → noop_within_threshold. AI Agent and Telegram are NOT
+      invoked — zero tokens spent, zero Telegram noise.
+
+algorithm_before_ai_guards:
+  - layer: MCP zod input schema
+    where: mcp-feature-flags server (server.ts)
+    rejects: >-
+      Invalid percentage (non-integer, <0, >100) and invalid state values
+      (anything other than Disabled/Testing/Enabled) — server-side rejection
+      happens BEFORE the agent ever sees a tool result.
+  - layer: MCP business rules
+    where: mcp-feature-flags server (server.ts)
+    rejects: >-
+      set_feature_state(state="Enabled") while any dependency is Disabled
+      (DEPENDENCY_NOT_ENABLED); adjust_traffic_rollout with percentage>0 while
+      status=Disabled (DISABLED_TRAFFIC_LOCKED).
+  - layer: Switch on error_rate thresholds + current status
+    where: decision_switch node
+    rejects: >-
+      Every cycle that is not (error_rate>0.05 AND status!=Disabled) and not
+      (error_rate<0.01 AND status==Disabled). The AI Agent is therefore never
+      consulted for noop decisions — the algorithm decides, not the model.
+  - layer: GCAO no-op self-guard inside the agent
+    where: ai_agent_monitor (system_prompt)
+    rejects: >-
+      Any set_feature_state call where the current status already equals the
+      target state. Agent instead emits action_taken="no_op" with
+      reason=already_disabled / already_enabled.
+  - layer: Telegram wiring topology
+    where: connections (telegram_alert wired only from ai_agent_monitor main)
+    rejects: >-
+      Telegram alerts for the NoOp branch — the fallback Switch output never
+      reaches the Telegram node, so within-threshold cycles cannot spam.

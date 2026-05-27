@@ -1,0 +1,386 @@
+{
+  "name": "wf2-scheduled-monitor",
+  "nodes": [
+    {
+      "id": "11111111-1111-1111-1111-111111111101",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-1600, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "11111111-1111-1111-1111-11111111110a",
+      "name": "Read Logs File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [-1400, 300],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "D:/HS/dev/aidd_course/aidd1_proshop_mern/homework/M5/logs.json",
+        "options": {
+          "dataPropertyName": "data"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "11111111-1111-1111-1111-11111111110b",
+      "name": "Analyze Logs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1280, 300],
+      "parameters": {
+        "jsCode": "let raw = '';\nconst items = $input.all();\n\nif (items.length > 0 && items[0].binary && items[0].binary.data) {\n  try {\n    const buf = await this.helpers.getBinaryDataBuffer(0, 'data');\n    raw = buf.toString('utf-8');\n  } catch (e) {\n    const inline = items[0].binary.data.data;\n    if (typeof inline === 'string') {\n      raw = Buffer.from(inline, 'base64').toString('utf-8');\n    }\n  }\n}\n\nlet data = [];\ntry {\n  data = raw ? JSON.parse(raw) : [];\n} catch (e) {\n  data = [];\n}\n\nconst feature_id = 'search_v2';\nconst now = Date.now();\nconst window_ms = 60 * 1000;\n\nconst recent = data.filter((e) => {\n  const ts = new Date(e.timestamp).getTime();\n  return Number.isFinite(ts)\n    && (now - ts) < window_ms\n    && (!e.feature_id || e.feature_id === feature_id);\n});\n\nconst total = recent.length;\nconst errors = recent.filter((e) => e.status === 'error').length;\nconst error_rate = total > 0 ? errors / total : 0;\n\nreturn [{\n  json: {\n    feature_id,\n    error_rate,\n    total,\n    errors,\n  },\n}];\n"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111103",
+      "name": "Get Feature Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1200, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "=http://localhost:5680/feature/{{ $json.feature_id }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111104",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1000, 300],
+      "parameters": {
+        "jsCode": "const stats = $('Analyze Logs').item.json;\nconst feature = $('Get Feature Status').item.json ?? {};\n\nreturn [{\n  json: {\n    feature_id: stats.feature_id,\n    error_rate: stats.error_rate,\n    total: stats.total,\n    errors: stats.errors,\n    current_status: feature.status ?? null,\n    traffic_percentage: feature.traffic_percentage ?? null,\n    mcp_error: feature.error ?? null,\n  },\n}];\n"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111105",
+      "name": "Decision Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [-800, 300],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.error_rate }}",
+                    "rightValue": 0.05,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.current_status }}",
+                    "rightValue": "Disabled",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "deactivate"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.error_rate }}",
+                    "rightValue": 0.01,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.current_status }}",
+                    "rightValue": "Disabled",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "reenable"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111106",
+      "name": "Set Decision Deactivate",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-600, 100],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1111111-1111-1111-1111-111111111111",
+              "name": "decision",
+              "type": "string",
+              "value": "deactivate"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111107",
+      "name": "Set Decision Reenable",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-600, 300],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a2222222-2222-2222-2222-222222222222",
+              "name": "decision",
+              "type": "string",
+              "value": "reenable"
+            }
+          ]
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111108",
+      "name": "NoOp Within Threshold",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-600, 500],
+      "parameters": {}
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111109",
+      "name": "AI Agent Monitor",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [-300, 200],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify({\n  feature_id: $json.feature_id,\n  error_rate: $json.error_rate,\n  total: $json.total,\n  current_status: $json.current_status,\n  decision: $json.decision\n}) }}",
+        "options": {
+          "systemMessage": "=Goal:\nЗарегистрировать инцидент или recovery для feature {{ $json.feature_id }}.\nТекущий error rate: {{ $json.error_rate }} (threshold deactivate: 5%, threshold re-enable: 1%).\nТекущее состояние: {{ $json.current_status }}.\nDecision из upstream: {{ $json.decision }} (deactivate | reenable | noop).\n\nContext:\n- Decision уже посчитан upstream (в Switch-ноде) — твоя задача выполнить решение через MCP.\n- Available tools: get_feature_info, set_feature_state.\n- Схемы MCP tools (источник истины — mcp-feature-flags/server.ts):\n    * get_feature_info({ feature_name: string })\n    * set_feature_state({ feature_name: string, state: \"Disabled\" | \"Testing\" | \"Enabled\" })\n  ВНИМАНИЕ: параметр называется state, не target_state. Передавай ровно \"Disabled\" / \"Testing\" / \"Enabled\" (case-sensitive).\n- Threshold deactivate = 5%, re-enable = 1%. При decision=deactivate фича сейчас не Disabled. При decision=reenable фича сейчас Disabled.\n- НЕ принимай решение самостоятельно: следуй decision из payload. Это и есть Algorithm-before-AI — guards снаружи модели.\n\nAction:\n1. Вызови get_feature_info({ feature_name: \"{{ $json.feature_id }}\" }) для актуального state (на случай гонки между Switch и AI Agent).\n2. Если decision=\"deactivate\":\n   - Проверь что status != \"Disabled\". Если уже Disabled — верни action_taken=\"no_op\", reason=\"already_disabled\" (защита от спама).\n   - Иначе вызови set_feature_state({ feature_name: \"{{ $json.feature_id }}\", state: \"Disabled\" }).\n   - Снова get_feature_info для верификации.\n3. Если decision=\"reenable\":\n   - Проверь что status == \"Disabled\". Если уже Enabled — верни action_taken=\"no_op\", reason=\"already_enabled\".\n   - Иначе вызови set_feature_state({ feature_name: \"{{ $json.feature_id }}\", state: \"Enabled\" }).\n   - Снова get_feature_info для верификации.\n4. Если decision=\"noop\" — ничего не делать, верни action_taken=\"no_op\", reason=\"within_threshold\".\n5. Сформируй короткий русский alert_message для Telegram.\n\nOutput:\nJSON строго по схеме (Structured Output Parser):\n{\n  \"action_taken\": \"deactivated\" | \"reenabled\" | \"no_op\" | \"error\",\n  \"previous_state\": object | null,\n  \"new_state\": object | null,\n  \"alert_message\": string (1-2 предложения для Telegram),\n  \"error_rate_percent\": number,\n  \"threshold_used\": number,\n  \"reason\": string | null\n}\n\nConstraints:\n- alert_message:\n  - deactivate: \"🚨 Feature {{name}} деактивирована: error rate {{X}}% превысил порог {{Y}}%.\"\n  - reenable:   \"✅ Feature {{name}} восстановлена: error rate {{X}}% упал ниже {{Y}}%.\"\n  - no_op:      \"ℹ️ Feature {{name}} — без изменений (error rate {{X}}%, статус {{S}}).\"\n- НЕ вызывай set_feature_state если state уже соответствует целевому (no-op guard).\n- Параметр инструмента — state, не target_state. percentage (если когда-то понадобится adjust_traffic_rollout) — integer 0..100, не traffic_percentage.\n- При ошибке от MCP — action_taken=\"error\" с reason содержащим сообщение от инструмента.\n- error_rate_percent = round(error_rate * 100, 1). threshold_used = 5 для deactivate, 1 для reenable, 5 для no_op.\n- Telegram-сообщение отправляется только на main output AI Agent. NoOp ветка молчит (это уже обеспечено upstream — агент в noop-ветке не вызывается).",
+          "maxIterations": 6,
+          "returnIntermediateSteps": true
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "11111111-1111-1111-1111-11111111110a",
+      "name": "Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [-500, 500],
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "placeholder",
+          "name": "gemini-api"
+        }
+      }
+    },
+    {
+      "id": "11111111-1111-1111-1111-11111111110b",
+      "name": "MCP Client Tool",
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [-300, 500],
+      "parameters": {
+        "sseEndpoint": "http://localhost:5680/mcp",
+        "serverTransport": "httpStreamable",
+        "authentication": "none"
+      }
+    },
+    {
+      "id": "11111111-1111-1111-1111-11111111110c",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [-100, 500],
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"required\": [\"action_taken\", \"alert_message\", \"error_rate_percent\", \"threshold_used\"],\n  \"properties\": {\n    \"action_taken\": {\n      \"type\": \"string\",\n      \"enum\": [\"deactivated\", \"reenabled\", \"no_op\", \"error\"]\n    },\n    \"alert_message\": { \"type\": \"string\" },\n    \"error_rate_percent\": { \"type\": \"number\" },\n    \"threshold_used\": { \"type\": \"number\" }\n  }\n}"
+      }
+    },
+    {
+      "id": "11111111-1111-1111-1111-11111111110d",
+      "name": "Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [-100, 200],
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.output.alert_message }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "placeholder",
+          "name": "telegram-bot"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          { "node": "Read Logs File", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Read Logs File": {
+      "main": [
+        [
+          { "node": "Analyze Logs", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Analyze Logs": {
+      "main": [
+        [
+          { "node": "Get Feature Status", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get Feature Status": {
+      "main": [
+        [
+          { "node": "Merge Data", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          { "node": "Decision Switch", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Decision Switch": {
+      "main": [
+        [
+          { "node": "Set Decision Deactivate", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Set Decision Reenable", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "NoOp Within Threshold", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Set Decision Deactivate": {
+      "main": [
+        [
+          { "node": "AI Agent Monitor", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Set Decision Reenable": {
+      "main": [
+        [
+          { "node": "AI Agent Monitor", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          { "node": "AI Agent Monitor", "type": "ai_languageModel", "index": 0 }
+        ]
+      ]
+    },
+    "MCP Client Tool": {
+      "ai_tool": [
+        [
+          { "node": "AI Agent Monitor", "type": "ai_tool", "index": 0 }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          { "node": "AI Agent Monitor", "type": "ai_outputParser", "index": 0 }
+        ]
+      ]
+    },
+    "AI Agent Monitor": {
+      "main": [
+        [
+          { "node": "Telegram Alert", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": ""
+  }
+}
