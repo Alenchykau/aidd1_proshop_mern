@@ -3,8 +3,8 @@
 ## Архитектура
 
 Два n8n-workflow поверх связки M3 (MCP feature-flags) + M4 (Feature Dashboard):
-**WF1** — синхронный manual trigger: кнопки в Dashboard шлют POST на n8n webhook, AI Agent через MCP крутит ручки фичи, UI отображает результат и сообщение от агента.
-**WF2** — асинхронный scheduled monitor: cron каждую минуту читает `logs.json` (его пишет `simulate_wf2.py` с синусоидальным error rate), Switch принимает решение алгоритмически, AI Agent выполняет MCP-write и шлёт Telegram-алерт. Полный цикл deactivate → re-enable виден за один прогон симулятора.
+**WF1** — Сделан вручную по спеке. Синхронный manual trigger: кнопки в Dashboard шлют POST на n8n webhook, AI Agent через MCP крутит ручки фичи, UI отображает результат и сообщение от агента.
+**WF2** — Сгенерирован с помощью агентов n8n-requirements-orchestrator.md и n8n-workflow-builder.md. Асинхронный scheduled monitor: cron каждую минуту читает `logs.json` (его пишет `simulate_wf2.py` с синусоидальным error rate), Switch принимает решение алгоритмически, AI Agent выполняет MCP-write и шлёт Telegram-алерт. Полный цикл deactivate → re-enable виден за один прогон симулятора.
 
 ## Стек
 
