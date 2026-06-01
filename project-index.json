@@ -129,7 +129,8 @@
       "package.json",
       "project-index.json",
       "prompt.md",
-      "requirements-rag.txt"
+      "requirements-rag.txt",
+      "stryker.conf.json"
     ],
     ".claude": [
       "agents/",
@@ -552,6 +553,10 @@
       "service-2-tests/",
       "README.md",
       "coverage-report.txt",
+      "final_msi.txt",
+      "starting_msi.txt",
+      "stryker-report.html",
+      "stryker-report.json",
       "test-writer-mate.md"
     ],
     "homework/M6/stage4-tests-agent/service-1-tests": [
@@ -603,5 +608,5 @@
       "test_tokens.py"
     ]
   },
-  "last_updated": "2026-06-01T23:20:50Z"
+  "last_updated": "2026-06-01T23:49:33Z"
 }

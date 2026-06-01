@@ -37,3 +37,14 @@ Several tests intentionally pin known-bad behavior so a future fix consciously u
 - `getOrders: ignores pagination params` — pins **PERF-002** (unbounded scan).
 
 These document the contract as-is; they are **not** endorsements. The matching fixes are tracked in the Stage 1 synthesis / proposed ADR-0005.
+
+## (Bonus) MSI — mutation testing
+
+Tooling note: the spec's `mutmut` won't run on Windows (requires WSL), and the Windows-native `mutatest` crashes under Python 3.14 (`random.sample` on a set). **Stryker 9** (maintained, Windows-OK) was used instead, via its **command runner** over `node:test` (no Stryker plugin exists for `node:test`). Target module: `backend/controllers/orderController.js`.
+
+- **Starting MSI = 65.22%** (30 killed / 46, 16 survived) — see `starting_msi.txt`.
+- **Final MSI = 95.65%** (44 killed / 46, 2 survived) — see `final_msi.txt`. Full report: `stryker-report.html` / `.json`.
+
+**Which mutants survived & what changed.** The 16 first-run survivors clustered almost entirely on `getOrderById` (the ownership `if` on line 51, the 403/404 blocks, their `Error(...)` message strings). Root cause wasn't weak assertions — it was that `getOrderById`'s tests live in the **Stage 2** file (`fix-1-order-idor.test.mjs`), which wasn't in the mutation command, so every `getOrderById` mutant ran against a suite that never exercised it. Adding that existing characterization test to the Stryker command killed all of them (boundary `!==`/`===`, the `!isAdmin` flip, and the block-removal mutants are all caught by the owner/non-owner/admin/404 cases) and lifted MSI to 95.65%. The **2 residual survivors** are `StringLiteral` mutants of the `.populate('user', 'name email')` arguments — no test asserts *which* fields are populated; this is non-behavioral field selection, accepted (well above the >70% target). Killing them would require asserting populate args, which over-specifies the test for no real-bug protection.
+
+Reproduce: `npx stryker run` (config: `stryker.conf.json`).
