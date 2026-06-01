@@ -64,15 +64,15 @@ test('owner reading own order -> 200 with the order body', async () => {
   assert.equal(res.body.user._id, 'u1')
 })
 
-// TARGET test for the fix (pins the IDOR bug as it exists today).
-// Pre-fix: a non-owner, non-admin user gets the full order back (200).
-// After the fix this MUST become 403 — see fix-1-order-idor.md.
-test('[PINS SEC-001 IDOR] non-owner currently reads any order -> 200 (bug, pre-fix)', async () => {
+// TARGET test — intentional behavior change (see fix-1-order-idor.md).
+// Pre-fix this pinned the IDOR bug (non-owner got 200 + the order body).
+// Post-fix a non-owner, non-admin user is rejected with 403 and no order body.
+test('[SEC-001 fixed] non-owner reading another user order -> 403, no body', async () => {
   const { res, err } = await run({ _id: 'u2', isAdmin: false }, 'u1')
-  assert.equal(err, null)
-  assert.equal(res.statusCode, 200)
-  assert.equal(res.body._id, 'order1')        // leaks order #1 to user u2
-  assert.equal(res.body.user.email, 'owner@example.com') // ...incl. PII
+  assert.equal(res.statusCode, 403)
+  assert.ok(err instanceof Error)
+  assert.equal(err.message, 'Not authorized to view this order')
+  assert.equal(res.body, undefined) // order (incl. PII) never serialized
 })
 
 // non-target — admin is allowed to read any order (stays green after fix)
