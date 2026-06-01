@@ -38,4 +38,6 @@ router.post('/', upload.single('image'), (req, res) => {
   res.send(`/${req.file.path}`)
 })
 
+// Exposed for characterization tests (test seam — no behavior change).
+export { checkFileType }
 export default router
