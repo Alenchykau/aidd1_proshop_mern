@@ -129,7 +129,8 @@
       "package.json",
       "project-index.json",
       "prompt.md",
-      "requirements-rag.txt"
+      "requirements-rag.txt",
+      "stryker.conf.json"
     ],
     ".claude": [
       "agents/",
@@ -163,6 +164,7 @@
       "update_project_index.py"
     ],
     "backend": [
+      "__tests__/",
       "config/",
       "controllers/",
       "data/",
@@ -173,6 +175,9 @@
       "features.json",
       "seeder.js",
       "server.js"
+    ],
+    "backend/__tests__": [
+      "orderController.test.mjs"
     ],
     "backend/config": [
       "db.js"
@@ -525,12 +530,41 @@
       "fix-3-product-regex.test.mjs"
     ],
     "homework/M6/stage3-living-docs": [
+      "docs-archived/",
+      "docs-new/",
       "00-plan.md",
+      "CLAUDE.md",
       "docs-audit.md",
       "hook-smoketest.txt",
-      "stage3-synthesis.md"
+      "project-index.json",
+      "stage3-synthesis.md",
+      "update_project_index.py"
     ],
-    "homework/M6/stage4-tests-agent": [],
+    "homework/M6/stage3-living-docs/docs-archived": [
+      "FINDINGS.md",
+      "README.md",
+      "report.md"
+    ],
+    "homework/M6/stage3-living-docs/docs-new": [
+      "README.md"
+    ],
+    "homework/M6/stage4-tests-agent": [
+      "service-1-tests/",
+      "service-2-tests/",
+      "README.md",
+      "coverage-report.txt",
+      "final_msi.txt",
+      "starting_msi.txt",
+      "stryker-report.html",
+      "stryker-report.json",
+      "test-writer-mate.md"
+    ],
+    "homework/M6/stage4-tests-agent/service-1-tests": [
+      "test_rag_query.py"
+    ],
+    "homework/M6/stage4-tests-agent/service-2-tests": [
+      "orderController.test.mjs"
+    ],
     "mcp-feature-flags": [
       ".gitignore",
       "package-lock.json",
@@ -560,7 +594,8 @@
     ],
     "tests": [
       "build_chunks/",
-      "__init__.py"
+      "__init__.py",
+      "test_rag_query.py"
     ],
     "tests/build_chunks": [
       "__init__.py",
@@ -573,5 +608,5 @@
       "test_tokens.py"
     ]
   },
-  "last_updated": "2026-06-01T22:00:16Z"
+  "last_updated": "2026-06-01T23:49:33Z"
 }
