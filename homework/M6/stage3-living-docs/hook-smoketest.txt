@@ -1,0 +1,13 @@
+# PostToolUse hook smoke test — update_project_index.py --hook
+# (Captured 2026-06-02. A PNG screenshot of a live session trigger can replace
+#  this; the hook is configured in .claude/settings.local.json and fires on the
+#  NEXT session's Write/Edit/Bash. This is the equivalent stdin-simulated proof.)
+
+$ echo '{"tool_name":"Write","tool_input":{"file_path":"backend/services/_hooktest.js"}}' \
+    | python .claude/scripts/update_project_index.py --hook
+[update-index hook] triggered by Write on backend/services/_hooktest.js
+[update-index hook] ✅ updated project-index.json (tree + last_updated)
+
+$ echo '{"tool_name":"Edit","tool_input":{"file_path":"README.md"}}' \
+    | python .claude/scripts/update_project_index.py --hook
+[update-index hook] ignored (README.md not in WATCH_PATHS)

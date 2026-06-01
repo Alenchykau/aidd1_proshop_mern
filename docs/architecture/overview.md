@@ -1,5 +1,7 @@
 # Architecture — proshop_mern
 
+> **TODO(audit-2026-06-02):** Accurate for the **MERN core** (backend/frontend) but predates the M3-M5 additions. Does **not** yet cover: the feature-flags MCP (`mcp-feature-flags/`), the project-docs RAG MCP (`mcp-project-docs/` + `scripts/`), the M4 feature dashboard, or the feature-flags layer (`backend/features.json`). For those see `docs/specs/*-spec.md` and `project-index.json`. Historical build plans live in `docs-archived-2026-06-02/superpowers/`.
+
 MERN single-page app. React 16 / CRA dev server (port 3000) talks to Express 4 API (port 5000) via the `/api/*` proxy declared in `frontend/package.json`. In production `backend/server.js` runs alone on a single port and serves `frontend/build` as static, so the SPA and the API share an origin.
 
 - **Auth**: JWT HS256, 30-day expiry, `Authorization: Bearer …` headers (`backend/utils/generateToken.js`, `backend/middleware/authMiddleware.js`).
