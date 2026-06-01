@@ -41,13 +41,13 @@ test('valid jpg (.jpg + image/jpeg) is accepted', () => {
   assert.equal(r.accepted, true)
 })
 
-// TARGET test (pins the unanchored-regex bug). Pre-fix: ".jpgx" contains the
-// substring "jpg", so the unanchored /jpg|jpeg|png/ accepts it. After the fix
-// the regex is anchored and this MUST be rejected — see fix-2-upload-auth.md.
-test('[PINS SEC-008/PERF-015] unanchored regex currently accepts ".jpgx" (pre-fix)', () => {
+// TARGET test — intentional behavior change (see fix-2-upload-auth.md).
+// Pre-fix the unanchored /jpg|jpeg|png/ accepted ".jpgx" (substring match).
+// Post-fix the anchored /\.(jpe?g|png)$/i rejects it.
+test('[SEC-008/PERF-015 fixed] anchored regex rejects bogus ".jpgx" extension', () => {
   const r = classify('payload.jpgx', 'image/jpeg')
-  assert.equal(r.err, null)
-  assert.equal(r.accepted, true) // accepted today despite the bogus extension
+  assert.equal(r.err, 'Images only!')
+  assert.equal(r.accepted, undefined)
 })
 
 // error / non-target — a non-image is rejected. Stays green after the fix.
@@ -57,12 +57,14 @@ test('non-image (.pdf) is rejected with "Images only!"', () => {
   assert.equal(r.accepted, undefined)
 })
 
-// TARGET test (pins the missing authorization). Pre-fix: POST /api/upload has
-// exactly two handlers (multer + inline handler) and neither protect nor admin.
-// After the fix it MUST be guarded by protect + admin — see fix-2-upload-auth.md.
-test('[PINS SEC-008] POST /api/upload currently has NO protect/admin (pre-fix)', () => {
+// TARGET test — intentional behavior change (see fix-2-upload-auth.md).
+// Pre-fix POST /api/upload had 2 handlers (multer + inline) and no auth.
+// Post-fix it is guarded by protect + admin first (4 handlers total).
+// Note: `protect` is wrapped by express-async-handler, so its handler .name is
+// "asyncUtilWrap", not "protect"; `admin` is a plain named function.
+test('[SEC-008 fixed] POST /api/upload is guarded by protect + admin', () => {
   const names = postRouteHandlerNames()
-  assert.equal(names.includes('protect'), false)
-  assert.equal(names.includes('admin'), false)
-  assert.equal(names.length, 2)
+  assert.equal(names.length, 4)
+  assert.equal(names[0], 'asyncUtilWrap') // protect (asyncHandler-wrapped)
+  assert.equal(names[1], 'admin')
 })
