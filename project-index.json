@@ -163,6 +163,7 @@
       "update_project_index.py"
     ],
     "backend": [
+      "__tests__/",
       "config/",
       "controllers/",
       "data/",
@@ -173,6 +174,9 @@
       "features.json",
       "seeder.js",
       "server.js"
+    ],
+    "backend/__tests__": [
+      "orderController.test.mjs"
     ],
     "backend/config": [
       "db.js"
@@ -543,7 +547,19 @@
     "homework/M6/stage3-living-docs/docs-new": [
       "README.md"
     ],
-    "homework/M6/stage4-tests-agent": [],
+    "homework/M6/stage4-tests-agent": [
+      "service-1-tests/",
+      "service-2-tests/",
+      "README.md",
+      "coverage-report.txt",
+      "test-writer-mate.md"
+    ],
+    "homework/M6/stage4-tests-agent/service-1-tests": [
+      "test_rag_query.py"
+    ],
+    "homework/M6/stage4-tests-agent/service-2-tests": [
+      "orderController.test.mjs"
+    ],
     "mcp-feature-flags": [
       ".gitignore",
       "package-lock.json",
@@ -573,7 +589,8 @@
     ],
     "tests": [
       "build_chunks/",
-      "__init__.py"
+      "__init__.py",
+      "test_rag_query.py"
     ],
     "tests/build_chunks": [
       "__init__.py",
@@ -586,5 +603,5 @@
       "test_tokens.py"
     ]
   },
-  "last_updated": "2026-06-01T22:01:38Z"
+  "last_updated": "2026-06-01T23:20:50Z"
 }
