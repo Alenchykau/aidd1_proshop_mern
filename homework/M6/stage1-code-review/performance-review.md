@@ -9,8 +9,8 @@
 ## Summary
 
 - **Total findings:** 20
-- **HIGH:** 6
-- **MEDIUM:** 9
+- **HIGH:** 5
+- **MEDIUM:** 10
 - **LOW:** 5
 
 ### Top 3 critical concerns (file:line, impact)
@@ -28,7 +28,7 @@
 | GET /api/feature-flags | 5-20ms incl. disk | PERF-005 (sync disk on every read) |
 | Any protected API call | +30-80ms per page | PERF-014 (User.findById per request) |
 
-## HIGH (6)
+## HIGH (5)
 
 ### PERF-001 --- User-controlled regex with no anchoring or escaping
 - **File:** backend/controllers/productController.js:14
@@ -66,7 +66,7 @@
 - **Impact:** (1) useSelector shallow equality breaks --> extra re-renders across the app; (2) the reduce + 4 number conversions run on every parent re-render. Net effect: 2x render counts on the order page.
 - **Fix:** useMemo, or compute itemsPrice server-side and read it from order.itemsPrice. Never assign to a redux-owned object during render.
 
-## MEDIUM (9)
+## MEDIUM (10)
 
 ### PERF-003 --- getMyOrders has no pagination, no sort, no index hint
 - **File:** backend/controllers/orderController.js:105
