@@ -2,9 +2,9 @@
   "search_v2": {
     "name": "New Search Algorithm",
     "description": "Replaces legacy regex-based keyword matching with a hybrid BM25 + TF-IDF ranking pipeline. Improves relevance for multi-word queries and handles common misspellings via fuzzy matching. Backend: new productController search path; index built on name, brand, category, description fields.",
-    "status": "Testing",
-    "traffic_percentage": 25,
-    "last_modified": "2026-05-03",
+    "status": "Enabled",
+    "traffic_percentage": 100,
+    "last_modified": "2026-05-26",
     "targeted_segments": [
       "beta_users",
       "internal"
@@ -28,9 +28,9 @@
   "search_autosuggest": {
     "name": "Search Autocomplete / Autosuggest",
     "description": "Adds a real-time dropdown of suggested queries and product names as the user types in the SearchBox component. Debounced at 250ms; calls a lightweight /api/products/suggest endpoint. Improves time-to-first-result and reduces zero-result searches.",
-    "status": "Testing",
-    "traffic_percentage": 25,
-    "last_modified": "2026-03-22",
+    "status": "Disabled",
+    "traffic_percentage": 0,
+    "last_modified": "2026-05-26",
     "targeted_segments": [
       "all"
     ],
