@@ -151,6 +151,7 @@ Source of truth is `backend/features.json`. **Never edit it via `Edit`/`Write`**
 
 ### Commit rules
 
+- **The main branch is `main`** (not `master`). Branch feature work off `main` and target it for merges/PRs. The remote still carries a legacy `master` branch — ignore it; `main` is canonical.
 - Format: `course: <type>: <summary>` where `<type>` ∈ `feat | fix | docs | refactor | chore | test | style | perf`
 - Language: English, imperative mood (`add`, `fix` — not `added`/`fixes`)
 - First line ≤ 72 characters; body is optional and separated by a blank line
