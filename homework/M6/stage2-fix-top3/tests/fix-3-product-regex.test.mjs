@@ -62,19 +62,21 @@ test('plain keyword "phone" -> case-insensitive $regex on name', async () => {
   assert.equal(capturedFind.name.$options, 'i')
 })
 
-// TARGET test (pins the injection bug). Pre-fix: regex metacharacters reach
-// Mongo verbatim. After the fix they must be escaped — see fix-3-product-regex.md.
-test('[PINS SEC-004] regex metacharacters passed RAW into $regex (pre-fix)', async () => {
+// TARGET test — intentional behavior change (see fix-3-product-regex.md).
+// Pre-fix ".*" reached Mongo verbatim (matched everything). Post-fix the
+// metacharacters are escaped so the keyword is matched literally.
+test('[SEC-004 fixed] regex metacharacters are escaped before $regex', async () => {
   await run({ keyword: '.*' })
-  assert.equal(capturedFind.name.$regex, '.*') // unescaped today -> matches everything
+  assert.equal(capturedFind.name.$regex, '\\.\\*') // literal ".*", not a pattern
 })
 
-// TARGET test (pins the missing length cap / ReDoS surface). Pre-fix: the full
-// 200-char keyword reaches Mongo. After the fix it must be capped at 64.
-test('[PINS PERF-001] long keyword passed UNCAPPED into $regex (pre-fix)', async () => {
+// TARGET test — intentional behavior change (see fix-3-product-regex.md).
+// Pre-fix a 200-char keyword reached Mongo uncapped. Post-fix the raw input is
+// capped at 64 chars before escaping (bounds ReDoS / COLLSCAN cost).
+test('[PERF-001 fixed] long keyword is capped at 64 chars', async () => {
   const long = 'a'.repeat(200)
   await run({ keyword: long })
-  assert.equal(capturedFind.name.$regex.length, 200)
+  assert.equal(capturedFind.name.$regex.length, 64)
 })
 
 // non-target — pagination parses pageNumber. Stays green after the fix.
