@@ -1,5 +1,12 @@
 {
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "feature-flags"
-  ]
+    "feature-flags",
+    "project-docs"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)"
+    ]
+  }
 }
