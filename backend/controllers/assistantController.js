@@ -1,4 +1,5 @@
 import asyncHandler from 'express-async-handler'
+import mongoose from 'mongoose'
 import ChatLog from '../models/chatLogModel.js'
 
 // @desc    Get recent AI assistant chat logs (router decisions)
@@ -60,4 +61,22 @@ const postChat = asyncHandler(async (req, res) => {
   res.json({ reply: data.reply })
 })
 
-export { getChatLogs, postChat }
+// @desc    DELIBERATELY UNSAFE wide DB access for the DZ2 demo (excessive agency).
+//          Принимает collection+filter АРГУМЕНТОМ от LLM — это и есть дыра (LLM06).
+//          Включается ТОЛЬКО при ASSISTANT_VULNERABLE_MODE=true; иначе 403.
+// @route   POST /api/assistant/raw-query
+// @access  Private (НО без скоупа — намеренно небезопасно, за флагом)
+const rawQuery = asyncHandler(async (req, res) => {
+  if (process.env.ASSISTANT_VULNERABLE_MODE !== 'true') {
+    res.status(403)
+    throw new Error('Vulnerable mode is disabled')
+  }
+  const { collection, filter } = req.body
+  const docs = await mongoose.connection
+    .collection(collection)
+    .find(filter || {})
+    .toArray()
+  res.json(docs)
+})
+
+export { getChatLogs, postChat, rawQuery }

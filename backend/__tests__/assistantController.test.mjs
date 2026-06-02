@@ -1,6 +1,7 @@
 import { test, mock, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { getChatLogs, postChat } from '../controllers/assistantController.js'
+import mongoose from 'mongoose'
+import { getChatLogs, postChat, rawQuery } from '../controllers/assistantController.js'
 import ChatLog from '../models/chatLogModel.js'
 
 const mockRes = () => {
@@ -15,6 +16,7 @@ afterEach(() => {
   mock.restoreAll()
   delete global.fetch
   delete process.env.N8N_ASSISTANT_WEBHOOK_URL
+  delete process.env.ASSISTANT_VULNERABLE_MODE
 })
 
 test('getChatLogs returns last logs sorted desc', async () => {
@@ -93,4 +95,24 @@ test('postChat returns 502 when router responds not ok', async () => {
   const res = mockRes()
   await assert.rejects(() => postChat(req, res))
   assert.equal(res.statusCode, 502)
+})
+
+test('rawQuery is blocked when ASSISTANT_VULNERABLE_MODE is off', async () => {
+  process.env.ASSISTANT_VULNERABLE_MODE = 'false'
+  const req = { body: { collection: 'users', filter: {} }, user: { _id: 'u1' } }
+  const res = mockRes()
+  await assert.rejects(() => rawQuery(req, res))
+  assert.equal(res.statusCode, 403)
+})
+
+test('rawQuery dumps all docs when vulnerable mode is on (the hole)', async () => {
+  process.env.ASSISTANT_VULNERABLE_MODE = 'true'
+  const all = [{ email: 'a@b.ru' }, { email: 'c@d.ru' }]
+  mock.method(mongoose.connection, 'collection', () => ({
+    find: () => ({ toArray: async () => all }),
+  }))
+  const req = { body: { collection: 'users', filter: {} }, user: { _id: 'u1' } }
+  const res = mockRes()
+  await rawQuery(req, res)
+  assert.deepEqual(res.body, all) // утекли ВСЕ — демонстрация уязвимости
 })
