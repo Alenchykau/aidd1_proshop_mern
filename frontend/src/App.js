@@ -19,6 +19,7 @@ import ProductListScreen from './screens/ProductListScreen'
 import ProductEditScreen from './screens/ProductEditScreen'
 import OrderListScreen from './screens/OrderListScreen'
 import FeatureListScreen from './screens/FeatureListScreen'
+import ChatWidget from './components/ChatWidget'
 
 const App = () => {
   return (
@@ -64,6 +65,7 @@ const App = () => {
         </Container>
       </main>
       <Footer />
+      <ChatWidget />
     </Router>
   )
 }
