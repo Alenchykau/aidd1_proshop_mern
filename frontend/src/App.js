@@ -19,6 +19,7 @@ import ProductListScreen from './screens/ProductListScreen'
 import ProductEditScreen from './screens/ProductEditScreen'
 import OrderListScreen from './screens/OrderListScreen'
 import FeatureListScreen from './screens/FeatureListScreen'
+import AIRouterDashboardScreen from './screens/AIRouterDashboardScreen'
 import ChatWidget from './components/ChatWidget'
 
 const App = () => {
@@ -54,6 +55,7 @@ const App = () => {
             path='/admin/featuredashboard'
             component={FeatureListScreen}
           />
+          <Route path='/admin/assistant-logs' component={AIRouterDashboardScreen} />
           <Route path='/search/:keyword' component={HomeScreen} exact />
           <Route path='/page/:pageNumber' component={HomeScreen} exact />
           <Route
