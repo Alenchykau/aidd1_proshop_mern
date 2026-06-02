@@ -56,7 +56,12 @@ const ChatWidget = () => {
           </Form>
         </div>
       )}
-      <Button className='chat-fab' variant='dark' onClick={() => setOpen((o) => !o)}>
+      <Button
+        className='chat-fab'
+        variant='dark'
+        onClick={() => setOpen((o) => !o)}
+        aria-label={open ? 'Закрыть чат-ассистента' : 'Открыть чат-ассистента'}
+      >
         💬
       </Button>
     </>

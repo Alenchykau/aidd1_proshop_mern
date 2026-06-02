@@ -9,7 +9,7 @@ const AIRouterDashboardScreen = ({ history }) => {
   const dispatch = useDispatch()
 
   const { userInfo } = useSelector((state) => state.userLogin)
-  const { loading, error, logs } = useSelector((state) => state.chatLogList)
+  const { loading, error, logs = [] } = useSelector((state) => state.chatLogList)
 
   useEffect(() => {
     if (userInfo && userInfo.isAdmin) {
@@ -19,15 +19,12 @@ const AIRouterDashboardScreen = ({ history }) => {
     }
   }, [dispatch, history, userInfo])
 
-  const total = logs ? logs.length : 0
-  const localCount = logs ? logs.filter((l) => l.route === 'local').length : 0
+  const total = logs.length
+  const localCount = logs.filter((l) => l.route === 'local').length
   const cloudCount = total - localCount
-  const saved = logs
-    ? logs
-        .filter((l) => l.route === 'local')
-        .reduce((s, l) => s + (l.costUsd || 0.002), 0)
-        .toFixed(4)
-    : 0
+  // Оценка экономии: каждый local-запрос иначе ушёл бы в облако (~$0.002/запрос).
+  const EST_CLOUD_COST_PER_CALL = 0.002
+  const saved = (localCount * EST_CLOUD_COST_PER_CALL).toFixed(4)
 
   return (
     <>
@@ -36,7 +33,7 @@ const AIRouterDashboardScreen = ({ history }) => {
         <Col><Card body>Всего: {total}</Card></Col>
         <Col><Card body>Local: {localCount}</Card></Col>
         <Col><Card body>Cloud: {cloudCount}</Card></Col>
-        <Col><Card body>Экономия ~${saved}</Card></Col>
+        <Col><Card body>Экономия ~${saved} (оценка)</Card></Col>
       </Row>
       {loading ? (
         <Loader />
