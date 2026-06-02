@@ -5,7 +5,8 @@ import ChatLog from '../models/chatLogModel.js'
 // @route   GET /api/assistant/logs
 // @access  Private/Admin
 const getChatLogs = asyncHandler(async (req, res) => {
-  const limit = Number(req.query.limit) || 100
+  const raw = parseInt(req.query.limit, 10)
+  const limit = raw > 0 && raw <= 500 ? raw : 100
   const logs = await ChatLog.find({})
     .sort({ createdAt: -1 })
     .limit(limit)
@@ -22,12 +23,18 @@ const postChat = asyncHandler(async (req, res) => {
     res.status(500)
     throw new Error('N8N_ASSISTANT_WEBHOOK_URL is not configured')
   }
+  if (!req.body.message || typeof req.body.message !== 'string') {
+    res.status(400)
+    throw new Error('message is required')
+  }
+  // SECURITY: n8n is a trusted-internal service only. The forwarded JWT lets the
+  // agent's scoped tools call back into Express (GET /api/orders/myorders etc.) as
+  // this user; n8n must never log or persist it. userId/userName come from req.user
+  // (verified JWT), never from the client-supplied body.
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
   const r = await fetch(webhook, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    // userId/userName — ДОВЕРЕННЫЕ из req.user (не из тела браузера).
-    // token прокидываем, чтобы scoped-тулы агента били в Express с этим JWT.
     body: JSON.stringify({
       message: req.body.message,
       userId: String(req.user._id),
@@ -39,7 +46,17 @@ const postChat = asyncHandler(async (req, res) => {
     res.status(502)
     throw new Error('Assistant router is unavailable')
   }
-  const data = await r.json()
+  let data
+  try {
+    data = await r.json()
+  } catch (e) {
+    res.status(502)
+    throw new Error('Unexpected response from assistant router')
+  }
+  if (!data || typeof data.reply !== 'string') {
+    res.status(502)
+    throw new Error('Unexpected response from assistant router')
+  }
   res.json({ reply: data.reply })
 })
 
