@@ -43,3 +43,7 @@ __pycache__/
 
 # n8n local data (sqlite db, encryption key, workflows, credentials)
 n8n-data/
+
+# M7 course materials (not our work) + per-project agent memory
+homework/M7/temp_homework/
+.claude/projects/
