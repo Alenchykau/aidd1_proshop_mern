@@ -43,3 +43,7 @@ __pycache__/
 
 # n8n local data (sqlite db, encryption key, workflows, credentials)
 n8n-data/
+
+# Stryker mutation testing
+.stryker-tmp/
+stryker.log

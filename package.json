@@ -11,10 +11,13 @@
     "dev": "npx concurrently \"npm run server\" \"npm run client\"",
     "data:import": "node backend/seeder",
     "data:destroy": "node backend/seeder -d",
+    "test:backend": "node --test --experimental-test-module-mocks \"homework/M6/stage2-fix-top3/tests/*.test.mjs\" \"backend/__tests__/*.test.mjs\"",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend"
   },
   "nodemonConfig": {
-    "watch": ["backend"],
+    "watch": [
+      "backend"
+    ],
     "ext": "js,mjs,json"
   },
   "author": "Brad Traversy",
@@ -31,6 +34,7 @@
     "multer": "^1.4.2"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^9.6.1",
     "concurrently": "^5.3.0",
     "nodemon": "^2.0.4"
   }

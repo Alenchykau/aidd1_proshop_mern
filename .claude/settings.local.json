@@ -1,12 +1,42 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(npm run *)"
+    ]
+  },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "feature-flags",
     "project-docs"
   ],
-  "permissions": {
-    "allow": [
-      "Bash(npm install *)"
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/scripts/update_project_index.py --hook"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"✅ Read project-index.json first for repo structure.\""
+          }
+        ]
+      }
     ]
   }
 }

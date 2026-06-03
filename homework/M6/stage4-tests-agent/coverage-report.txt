@@ -1,0 +1,13 @@
+# M6 Stage 4 — test run evidence (text in lieu of coverage-report.png; no GUI to screenshot)
+
+## Service 1 — project-docs RAG engine (scripts/rag_query.py) — pytest (.venv-rag)
+$ .venv-rag/Scripts/python.exe -m pytest tests/test_rag_query.py -q
+tests/test_rag_query.py::test_search_hybrid_when_dense_empty_falls_back_to_bm25
+tests/test_rag_query.py::test_search_hybrid_does_not_call_dense_when_mode_is_bm25
+27 passed, 7 warnings in 8.48s
+
+## Service 2 — orderController (backend/controllers/orderController.js) — node:test
+$ npm run test:backend  (stage2 + stage4 node:test files)
+ℹ tests 27
+ℹ pass 27
+ℹ fail 0

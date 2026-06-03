@@ -1,0 +1,612 @@
+{
+  "name": "proshop_mern (fork)",
+  "type": "fullstack-polyglot-monorepo",
+  "description": "MERN e-commerce (Brad Traversy proshop) extended with a feature-flags MCP (TS), a project-docs RAG MCP (Python), a feature dashboard, and n8n agentic workflows across course modules M3-M5.",
+  "tech_stack": {
+    "backend": "Node + Express 4.17 + Mongoose 5.10 (ESM), JWT (jsonwebtoken 8, HS256), bcryptjs, multer 1.4",
+    "frontend": "React 16.13 + classic Redux 4 + redux-thunk + react-router-dom v5, CRA 3.4 (Webpack 4)",
+    "feature_flags_mcp": "TypeScript + @modelcontextprotocol/sdk + zod + express (stdio + HTTP transports)",
+    "project_docs_mcp": "Python 3 + mcp FastMCP, wraps hybrid RAG (BGE-M3 via Ollama + Qdrant + rank-bm25 RRF)",
+    "rag_pipeline": "Python 3 (markdown-it-py, tiktoken, ollama, qdrant-client, rank-bm25)",
+    "datastores": "MongoDB (app data), Qdrant (RAG vectors), local FS uploads/ (images)"
+  },
+  "subprojects": {
+    "backend": {
+      "path": "backend/",
+      "description": "Express REST API: products/users/orders/upload + /api/config/paypal. route -> controller -> Mongoose model; no service layer.",
+      "entry": "backend/server.js",
+      "tech": "Node + Express 4 + Mongoose 5 (ESM)",
+      "key_paths": {
+        "routes": "backend/routes/",
+        "controllers": "backend/controllers/",
+        "models": "backend/models/",
+        "auth": "backend/middleware/authMiddleware.js",
+        "token": "backend/utils/generateToken.js",
+        "feature_flags_data": "backend/features.json",
+        "feature_flags_reader": "backend/utils/featureFile.js"
+      }
+    },
+    "frontend": {
+      "path": "frontend/",
+      "description": "CRA SPA (catalog/cart/checkout/orders/admin) + M4 Feature Dashboard. Dev proxies /api/* to 127.0.0.1:5000.",
+      "entry": "frontend/src/index.js",
+      "tech": "React 16.13 + Redux 4 + RRv5",
+      "key_paths": {
+        "router": "frontend/src/App.js",
+        "store": "frontend/src/store.js",
+        "screens": "frontend/src/screens/",
+        "actions": "frontend/src/actions/",
+        "reducers": "frontend/src/reducers/"
+      }
+    },
+    "mcp-feature-flags": {
+      "path": "mcp-feature-flags/",
+      "description": "MCP server: the ONLY sanctioned writer of backend/features.json. Enforces dependency-gate + disabled-traffic-lock. Tools: get_feature_info, set_feature_state, adjust_traffic_rollout, list_features.",
+      "entry": "mcp-feature-flags/server.ts (build -> dist/server.js)",
+      "tech": "TypeScript + MCP SDK + zod + express",
+      "key_paths": {
+        "source": "mcp-feature-flags/server.ts",
+        "spec": "docs/specs/feature-flags-mcp-spec.md"
+      }
+    },
+    "mcp-project-docs": {
+      "path": "mcp-project-docs/",
+      "description": "MCP server: hybrid RAG search (search_project_docs) over the docs corpus. Reads docs/chunks.jsonl at import.",
+      "entry": "mcp-project-docs/server.py",
+      "tech": "Python 3 + FastMCP + Qdrant + Ollama + BM25",
+      "key_paths": {
+        "source": "mcp-project-docs/server.py",
+        "retriever": "scripts/rag_query.py",
+        "spec": "docs/specs/project-docs-rag-spec.md"
+      }
+    },
+    "rag-pipeline": {
+      "path": "scripts/",
+      "description": "Python RAG pipeline: chunk -> embed -> query. Builds docs/chunks.jsonl and the Qdrant collection proshop_chunks.",
+      "entry": "scripts/build_chunks.py",
+      "tech": "Python 3",
+      "key_paths": {
+        "chunker": "scripts/build_chunks/",
+        "embedder": "scripts/embed_chunks.py",
+        "query": "scripts/rag_query.py"
+      }
+    }
+  },
+  "system_folders": {
+    ".claude/": "Agent config: agents/ (mate + n8n + orchestrator definitions), scripts/update_project_index.py, settings.local.json (MCP enablement, hooks).",
+    "docs/": "Living docs: adr/ (3 real fork ADRs), architecture/, specs/ (per-module 4-step specs). DATA subtree: project-data/ + chunks.jsonl (RAG corpus — NOT docs).",
+    "homework/": "Course deliverables (M5 n8n workflows, M6 audit artifacts). Not production code.",
+    "tests/": "pytest suite for the RAG chunking pipeline (scripts/build_chunks).",
+    "uploads/": "multer disk storage for product images (ephemeral on Heroku)."
+  },
+  "root_files": {
+    "CLAUDE.md": "Primary AI agent rules (stack, conventions, gotchas, commit rules). READ alongside this index.",
+    "DESIGN.md": "M4 design rules for the frontend.",
+    "README.md": "Project overview + setup (covers MCP/RAG; has known path drift, see docs-audit).",
+    ".mcp.json": "Registers feature-flags (node) and project-docs (python) MCP servers.",
+    "package.json": "Root backend scripts (dev/server/seeder/test:backend) + deps.",
+    "requirements-rag.txt": "Python deps for the RAG pipeline + pytest.",
+    "Procfile": "Heroku: web: node backend/server.js (single process serves API + built SPA)."
+  },
+  "hard_rules": [
+    "ALWAYS read project-index.json FIRST at session start, then CLAUDE.md.",
+    "backend/features.json is written ONLY through the feature-flags MCP (it validates dependencies, enforces the disabled-traffic lock, stamps last_modified). NEVER Edit/Write it directly.",
+    "docs/chunks.jsonl and docs/project-data/ are RAG runtime data read at import by mcp-project-docs/server.py. Do NOT archive, move, or treat them as documentation.",
+    "docs/adr/ holds the 3 real fork ADRs (0001-0003). docs/project-data/adrs/ is synthetic RAG corpus, NOT architectural decisions — do not act on it as policy.",
+    "Backend is ESM: relative imports MUST end in .js. The canonical branch is `main`, not master.",
+    "Keep project-index.json current via .claude/scripts/update_project_index.py (or the PostToolUse hook) whenever files/folders are added, removed, or renamed."
+  ],
+  "ai_routing": {
+    "feature_flag_status_or_change": "feature-flags MCP (mcp-feature-flags): get_feature_info / list_features for reads; set_feature_state / adjust_traffic_rollout for writes. Do not read backend/features.json directly.",
+    "product_docs_architecture_adr_runbook_incident": "project-docs MCP (mcp-project-docs): search_project_docs (hybrid RAG over docs/).",
+    "fork_architecture_decisions": "docs/adr/0001-0003 (real). Proposed: ADR-0004 (MCP single-writer), ADR-0005 (authz layer).",
+    "module_behavior_and_edge_cases": "docs/specs/*-spec.md (4-step reverse-engineering specs).",
+    "code_review_findings": "homework/M6/stage1-code-review/synthesis.md (57 findings, Top-3 fixed in Stage 2)."
+  },
+  "filesystem_tree": {
+    ".": [
+      ".claude/",
+      "backend/",
+      "docs-archived-2026-06-02/",
+      "docs/",
+      "frontend/",
+      "homework/",
+      "mcp-feature-flags/",
+      "mcp-project-docs/",
+      "scripts/",
+      "tests/",
+      ".env",
+      ".env.example",
+      ".gitignore",
+      ".mcp.json",
+      "CLAUDE.md",
+      "DESIGN.md",
+      "Procfile",
+      "README.md",
+      "anti-slop-supplement.md",
+      "error-message.txt",
+      "package-lock.json",
+      "package.json",
+      "project-index.json",
+      "prompt.md",
+      "requirements-rag.txt",
+      "stryker.conf.json"
+    ],
+    ".claude": [
+      "agents/",
+      "projects/",
+      "scripts/",
+      "settings.local.json"
+    ],
+    ".claude/agents": [
+      "README.md",
+      "architecture-mate.md",
+      "frontend-developer.md",
+      "legacy-auditor-mate.md",
+      "n8n-requirements-orchestrator.md",
+      "n8n-workflow-builder.md",
+      "performance-mate.md",
+      "security-mate.md",
+      "test-writer-mate.md",
+      "ux-designer.md"
+    ],
+    ".claude/projects": [
+      "D--HS-dev-aidd-course-aidd1-proshop-mern/"
+    ],
+    ".claude/projects/D--HS-dev-aidd-course-aidd1-proshop-mern": [
+      "memory/"
+    ],
+    ".claude/projects/D--HS-dev-aidd-course-aidd1-proshop-mern/memory": [
+      "MEMORY.md",
+      "main-is-default-branch.md"
+    ],
+    ".claude/scripts": [
+      "update_project_index.py"
+    ],
+    "backend": [
+      "__tests__/",
+      "config/",
+      "controllers/",
+      "data/",
+      "middleware/",
+      "models/",
+      "routes/",
+      "utils/",
+      "features.json",
+      "seeder.js",
+      "server.js"
+    ],
+    "backend/__tests__": [
+      "orderController.test.mjs"
+    ],
+    "backend/config": [
+      "db.js"
+    ],
+    "backend/controllers": [
+      "featureController.js",
+      "orderController.js",
+      "productController.js",
+      "userController.js"
+    ],
+    "backend/data": [
+      "products.js",
+      "users.js"
+    ],
+    "backend/middleware": [
+      "authMiddleware.js",
+      "errorMiddleware.js"
+    ],
+    "backend/models": [
+      "orderModel.js",
+      "productModel.js",
+      "userModel.js"
+    ],
+    "backend/routes": [
+      "featureRoutes.js",
+      "orderRoutes.js",
+      "productRoutes.js",
+      "uploadRoutes.js",
+      "userRoutes.js"
+    ],
+    "backend/utils": [
+      "featureFile.js",
+      "generateToken.js"
+    ],
+    "docs": [
+      "adr/",
+      "architecture/",
+      "project-data/",
+      "specs/",
+      "README.md",
+      "chunks.jsonl"
+    ],
+    "docs/adr": [
+      "0001-jwt-bearer-token-in-localstorage.md",
+      "0002-single-process-prod-deployment.md",
+      "0003-runtime-paypal-client-id-endpoint.md",
+      "0004-feature-flags-mcp-single-writer.md",
+      "0005-authorization-layer.md"
+    ],
+    "docs/architecture": [
+      "overview.md"
+    ],
+    "docs/project-data": [
+      "adrs/",
+      "api/",
+      "features/",
+      "incidents/",
+      "pages/",
+      "runbooks/",
+      "architecture.md",
+      "best-practices.md",
+      "dev-history.md",
+      "feature-flags-spec.md",
+      "features-analysis-ru.md",
+      "glossary.md"
+    ],
+    "docs/project-data/adrs": [
+      "adr-001-mongodb-vs-postgres.md",
+      "adr-002-redux-vs-context.md",
+      "adr-003-jwt-vs-session.md",
+      "adr-004-paypal-vs-stripe.md",
+      "adr-005-bootstrap-vs-tailwind.md"
+    ],
+    "docs/project-data/api": [
+      "auth.md",
+      "orders.md",
+      "products.md",
+      "uploads.md",
+      "users.md"
+    ],
+    "docs/project-data/features": [
+      "admin.md",
+      "auth.md",
+      "cart.md",
+      "catalog.md",
+      "checkout.md",
+      "payments.md"
+    ],
+    "docs/project-data/incidents": [
+      "i-001-paypal-double-charge.md",
+      "i-002-mongo-connection-pool-exhaustion.md",
+      "i-003-jwt-secret-leak.md"
+    ],
+    "docs/project-data/pages": [
+      "INDEX.md",
+      "admin-orders.md",
+      "admin-product-edit.md",
+      "admin-products.md",
+      "admin-user-edit.md",
+      "admin-users.md",
+      "cart.md",
+      "home.md",
+      "login.md",
+      "order.md",
+      "payment.md",
+      "place-order.md",
+      "product.md",
+      "profile.md",
+      "register.md",
+      "shipping.md"
+    ],
+    "docs/project-data/runbooks": [
+      "ab-test-setup.md",
+      "db-seed-and-reset.md",
+      "deploy.md",
+      "feature-flag-toggle.md",
+      "incident-response.md",
+      "local-setup.md"
+    ],
+    "docs/specs": [
+      "feature-flags-mcp-spec.md",
+      "order-controller-spec.md",
+      "project-docs-rag-spec.md"
+    ],
+    "docs-archived-2026-06-02": [
+      "superpowers/",
+      "FINDINGS.md",
+      "README.md",
+      "report.md"
+    ],
+    "docs-archived-2026-06-02/superpowers": [
+      "plans/",
+      "specs/"
+    ],
+    "docs-archived-2026-06-02/superpowers/plans": [
+      "2026-05-03-vector-db-chunking.md",
+      "2026-05-05-mcp-project-docs.md",
+      "2026-05-09-feature-dashboard-redesign.md",
+      "2026-05-09-feature-dashboard.md",
+      "2026-05-10-m4-foundation.md",
+      "2026-05-10-m4-phase1-public.md",
+      "2026-05-10-m4-phase2-auth-checkout.md",
+      "2026-05-10-m4-phase3-admin.md",
+      "2026-05-13-feature-flags-correction.md"
+    ],
+    "docs-archived-2026-06-02/superpowers/specs": [
+      "2026-05-03-vector-db-chunking-design.md",
+      "2026-05-05-mcp-project-docs-design.md",
+      "2026-05-09-feature-dashboard-design.md",
+      "2026-05-09-feature-dashboard-redesign-design.md",
+      "2026-05-10-m4-foundation-design.md",
+      "2026-05-10-m4-phase1-public-design.md",
+      "2026-05-10-m4-phase2-auth-checkout-design.md",
+      "2026-05-10-m4-phase3-admin-design.md",
+      "2026-05-13-feature-flags-correction-design.md"
+    ],
+    "frontend": [
+      "public/",
+      "src/",
+      ".env",
+      ".env.example",
+      "README.md",
+      "package-lock.json",
+      "package.json"
+    ],
+    "frontend/public": [
+      "images/",
+      "favicon.ico",
+      "index.html",
+      "logo192.png",
+      "logo512.png",
+      "manifest.json",
+      "robots.txt"
+    ],
+    "frontend/public/images": [
+      "airpods.jpg",
+      "alexa.jpg",
+      "camera.jpg",
+      "mouse.jpg",
+      "phone.jpg",
+      "playstation.jpg",
+      "sample.jpg"
+    ],
+    "frontend/src": [
+      "actions/",
+      "components/",
+      "constants/",
+      "context/",
+      "reducers/",
+      "screens/",
+      "App.js",
+      "bootstrap-overrides.css",
+      "bootstrap.min.css",
+      "index.css",
+      "index.js",
+      "serviceWorker.js",
+      "setupTests.js",
+      "store.js"
+    ],
+    "frontend/src/actions": [
+      "cartActions.js",
+      "featureActions.js",
+      "orderActions.js",
+      "productActions.js",
+      "userActions.js"
+    ],
+    "frontend/src/components": [
+      "ui/",
+      "AutoPilotControls.js",
+      "CheckoutSteps.css",
+      "CheckoutSteps.js",
+      "EmptyState.css",
+      "EmptyState.js",
+      "EmptyState.test.js",
+      "Footer.js",
+      "Header.css",
+      "Header.js",
+      "Loader.css",
+      "Loader.js",
+      "Message.css",
+      "Message.js",
+      "Meta.js",
+      "Paginate.js",
+      "Product.css",
+      "Product.js",
+      "ProductCarousel.css",
+      "ProductCarousel.js",
+      "Rating.css",
+      "Rating.js",
+      "SearchBox.js"
+    ],
+    "frontend/src/components/ui": [
+      "Badge.css",
+      "Badge.js",
+      "Button.css",
+      "Button.js",
+      "Card.css",
+      "Card.js",
+      "DataTable.css",
+      "DataTable.js",
+      "FormCard.css",
+      "FormCard.js",
+      "FormField.css",
+      "FormField.js",
+      "Pagination.css",
+      "Pagination.js",
+      "ThemeToggle.css",
+      "ThemeToggle.js",
+      "index.js"
+    ],
+    "frontend/src/constants": [
+      "cartConstants.js",
+      "featureConstants.js",
+      "orderConstants.js",
+      "productConstants.js",
+      "userConstants.js"
+    ],
+    "frontend/src/context": [
+      "ThemeContext.js"
+    ],
+    "frontend/src/reducers": [
+      "cartReducers.js",
+      "featureReducers.js",
+      "featureReducers.test.js",
+      "orderReducers.js",
+      "productReducers.js",
+      "userReducers.js"
+    ],
+    "frontend/src/screens": [
+      "CartScreen.css",
+      "CartScreen.js",
+      "FeatureListScreen.css",
+      "FeatureListScreen.js",
+      "FeatureListScreen.test.js",
+      "HomeScreen.css",
+      "HomeScreen.js",
+      "LoginScreen.js",
+      "OrderListScreen.js",
+      "OrderScreen.css",
+      "OrderScreen.js",
+      "PaymentScreen.css",
+      "PaymentScreen.js",
+      "PlaceOrderScreen.css",
+      "PlaceOrderScreen.js",
+      "ProductEditScreen.js",
+      "ProductListScreen.js",
+      "ProductScreen.css",
+      "ProductScreen.js",
+      "ProfileScreen.css",
+      "ProfileScreen.js",
+      "RegisterScreen.js",
+      "ShippingScreen.js",
+      "UserEditScreen.js",
+      "UserListScreen.js",
+      "admin-page.css",
+      "auth-form.css"
+    ],
+    "homework": [
+      "M4/",
+      "M5/",
+      "M6/"
+    ],
+    "homework/M4": [
+      "README.md"
+    ],
+    "homework/M5": [
+      "agents/",
+      "README.md",
+      "logs.json",
+      "m5-spec.md",
+      "m5_screencast.mp4",
+      "simulate_wf1.py",
+      "simulate_wf2.py",
+      "trace-wf1.png",
+      "trace-wf2-toggle.png",
+      "wf1-manual-trigger.json",
+      "wf2-scheduled-monitor.json",
+      "wf2-spec.yaml"
+    ],
+    "homework/M5/agents": [
+      "n8n-requirements-orchestrator.md",
+      "n8n-workflow-builder.md"
+    ],
+    "homework/M6": [
+      "stage1-code-review/",
+      "stage2-fix-top3/",
+      "stage3-living-docs/",
+      "stage4-tests-agent/",
+      "00-fork-map.md",
+      "M6-homework-spec.md"
+    ],
+    "homework/M6/stage1-code-review": [
+      "architecture-findings.jsonl",
+      "architecture-review.md",
+      "performance-findings.jsonl",
+      "performance-review.md",
+      "security-findings.jsonl",
+      "security-review.md",
+      "synthesis.md"
+    ],
+    "homework/M6/stage2-fix-top3": [
+      "tests/",
+      "fix-1-order-idor.md",
+      "fix-2-upload-auth.md",
+      "fix-3-product-regex.md"
+    ],
+    "homework/M6/stage2-fix-top3/tests": [
+      "fix-1-order-idor.test.mjs",
+      "fix-2-upload-auth.test.mjs",
+      "fix-3-product-regex.test.mjs"
+    ],
+    "homework/M6/stage3-living-docs": [
+      "docs-archived/",
+      "docs-new/",
+      "00-plan.md",
+      "CLAUDE.md",
+      "docs-audit.md",
+      "hook-smoketest.txt",
+      "project-index.json",
+      "stage3-synthesis.md",
+      "update_project_index.py"
+    ],
+    "homework/M6/stage3-living-docs/docs-archived": [
+      "FINDINGS.md",
+      "README.md",
+      "report.md"
+    ],
+    "homework/M6/stage3-living-docs/docs-new": [
+      "README.md"
+    ],
+    "homework/M6/stage4-tests-agent": [
+      "service-1-tests/",
+      "service-2-tests/",
+      "README.md",
+      "coverage-report.txt",
+      "final_msi.txt",
+      "starting_msi.txt",
+      "stryker-report.html",
+      "stryker-report.json",
+      "test-writer-mate.md"
+    ],
+    "homework/M6/stage4-tests-agent/service-1-tests": [
+      "test_rag_query.py"
+    ],
+    "homework/M6/stage4-tests-agent/service-2-tests": [
+      "orderController.test.mjs"
+    ],
+    "mcp-feature-flags": [
+      ".gitignore",
+      "package-lock.json",
+      "package.json",
+      "server.ts",
+      "tsconfig.json"
+    ],
+    "mcp-project-docs": [
+      "README.md",
+      "requirements.txt",
+      "server.py"
+    ],
+    "scripts": [
+      "build_chunks/",
+      "__init__.py",
+      "build_chunks.py",
+      "embed_chunks.py",
+      "rag_query.py"
+    ],
+    "scripts/build_chunks": [
+      "__init__.py",
+      "chunker.py",
+      "enrich.py",
+      "groups.py",
+      "schema.py",
+      "tokens.py"
+    ],
+    "tests": [
+      "build_chunks/",
+      "__init__.py",
+      "test_rag_query.py"
+    ],
+    "tests/build_chunks": [
+      "__init__.py",
+      "conftest.py",
+      "test_chunker.py",
+      "test_coordinator.py",
+      "test_enrich.py",
+      "test_groups.py",
+      "test_schema.py",
+      "test_tokens.py"
+    ]
+  },
+  "last_updated": "2026-06-01T23:49:33Z"
+}

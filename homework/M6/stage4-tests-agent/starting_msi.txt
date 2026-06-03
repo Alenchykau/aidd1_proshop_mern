@@ -1,0 +1,4 @@
+Starting MSI (orderController.js) = 65.22% (30 killed / 46 total, 16 survived)
+Tool: Stryker 9 (command runner, node:test).  mutmut blocked (needs WSL on Windows); mutatest blocked (random.sample-on-set bug under Python 3.14).
+Mutation command at this point ran ONLY backend/__tests__/orderController.test.mjs.
+=> All getOrderById mutants survived because that handler's tests live in the Stage 2 file (fix-1-order-idor.test.mjs), which was NOT in the mutation command.
