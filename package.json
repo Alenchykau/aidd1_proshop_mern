@@ -11,7 +11,7 @@
     "dev": "npx concurrently \"npm run server\" \"npm run client\"",
     "data:import": "node backend/seeder",
     "data:destroy": "node backend/seeder -d",
-    "test:backend": "node --test --experimental-test-module-mocks \"homework/M6/stage2-fix-top3/tests/*.test.mjs\" \"backend/__tests__/*.test.mjs\"",
+    "test:backend": "node --test \"backend/__tests__/*.mjs\"",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend"
   },
   "nodemonConfig": {

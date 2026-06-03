@@ -1,0 +1,20 @@
+.chat-fab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 1050;
+  border-radius: 50%; width: 56px; height: 56px; font-size: 24px;
+}
+.chat-panel {
+  position: fixed; right: 20px; bottom: 88px; z-index: 1050;
+  width: 340px; max-height: 60vh; display: flex; flex-direction: column;
+  background: #fff; border: 1px solid #ddd; border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  color: #1a1a1a; /* фиксируем тёмный текст, чтобы тёмная тема не делала его невидимым */
+}
+.chat-log { flex: 1; overflow-y: auto; padding: 10px; }
+.chat-msg {
+  margin-bottom: 8px; padding: 6px 10px; border-radius: 8px; max-width: 85%;
+  white-space: pre-wrap; word-break: break-word; color: #1a1a1a;
+}
+.chat-msg.user { background: #d2e9ff; color: #0b2545; margin-left: auto; }
+.chat-msg.assistant { background: #ececec; color: #1a1a1a; }
+.chat-input { display: flex; border-top: 1px solid #eee; padding: 8px; gap: 6px; }
+.chat-input input { flex: 1; color: #1a1a1a; background: #fff; }
