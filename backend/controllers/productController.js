@@ -8,10 +8,15 @@ const getProducts = asyncHandler(async (req, res) => {
   const pageSize = 10
   const page = Number(req.query.pageNumber) || 1
 
-  const keyword = req.query.keyword
+  // Cap raw input length first (bounds ReDoS), THEN escape regex
+  // metacharacters so the keyword is matched literally, not as a pattern.
+  const rawKeyword = req.query.keyword
+    ? String(req.query.keyword).slice(0, 64)
+    : ''
+  const keyword = rawKeyword
     ? {
         name: {
-          $regex: req.query.keyword,
+          $regex: rawKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
           $options: 'i',
         },
       }

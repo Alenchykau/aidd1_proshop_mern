@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "M6 Stage 4 (optional MSI). Command runner because the suite uses Node's built-in node:test with --experimental-test-module-mocks (no Stryker test-runner plugin for node:test).",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node --test --experimental-test-module-mocks backend/__tests__/orderController.test.mjs homework/M6/stage2-fix-top3/tests/fix-1-order-idor.test.mjs"
+  },
+  "mutate": ["backend/controllers/orderController.js"],
+  "coverageAnalysis": "off",
+  "reporters": ["clear-text", "json", "html"],
+  "htmlReporter": { "fileName": "homework/M6/stage4-tests-agent/stryker-report.html" },
+  "jsonReporter": { "fileName": "homework/M6/stage4-tests-agent/stryker-report.json" },
+  "tempDirName": ".stryker-tmp",
+  "thresholds": { "high": 80, "low": 60, "break": null }
+}

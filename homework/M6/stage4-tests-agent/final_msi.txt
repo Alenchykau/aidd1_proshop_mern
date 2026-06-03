@@ -1,0 +1,3 @@
+Final MSI (orderController.js) = 95.65% (44 killed / 46 total, 2 survived)
+Change: added the existing Stage 2 getOrderById characterization test to the Stryker command (both test files target orderController.js).
+Residual 2 survivors: StringLiteral mutants of the .populate('user','name email') arguments (lines 45-46) — which fields are populated is not asserted; non-behavioral, accepted. >70% target met.
