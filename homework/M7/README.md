@@ -9,13 +9,23 @@
 ## Что выбрано (и почему)
 - **Локальная модель:** Ollama, **`qwen3.5:4b`** (Q4_K_M) — лёгкая, tools надёжны, большой контекст.
   Сравнение с `gemma4:e4b` и обоснование — в [`0-deploy.md`](./0-deploy.md).
-- **Облако:** OpenRouter (один ключ → все модели).
-- **Роутер:** n8n (webhook). **PII-детект:** regex (email/телефон/карта) + лёгкая LLM-нода на
-  `qwen3.5:4b` (имена, в т.ч. кириллица). Роутеру GPU не нужен.
-- **Путь виджета → роутер:** Express-прокси `POST /api/assistant/chat` (за `protect`) —
-  доверенный `userId`/JWT из `req.user`, webhook не светится в браузер.
-- **Логи:** n8n пишет в Mongo-коллекцию `chatlogs`; дашборд читает через
-  `GET /api/assistant/logs` (admin).
+- **Агент:** n8n Tools Agent, модель через **`OpenAI Chat Model` → Ollama `/v1`** (нода Ollama не умеет
+  function-calling) + **нативные scoped-тулы** (`get_my_orders`/`get_profile` — `Authorization` из JWT
+  вебхука, фиксированный; `search_products`). Тулы создаются в UI нативно (импортный JSON ломается).
+- **Облако:** cloud-ветка — **стаб на той же локальной `qwen3.5:4b`** (чтобы не тратить на OpenRouter;
+  маршрут local/cloud и учёт стоимости при этом демонстрируются: local = $0, cloud = оценка).
+- **Роутер:** n8n (webhook). **PII-детект — regex-only** (email/телефон/карта). LLM-классификатор имён
+  убран при реализации: в n8n с локальной thinking-моделью он оказался медленным (`/no_think` не
+  долетает) и неточным → имена уходят в cloud (известное ограничение regex). Подробно — в
+  [`writeup-dz1.md`](./writeup-dz1.md). Роутеру GPU не нужен (regex на CPU).
+- **Путь виджета → роутер:** Express-прокси `POST /api/assistant/chat` (за `protect`) — доверенный
+  `userId`/JWT из `req.user`, webhook не светится в браузер; токен прокидывается в вебхук для scoped-тулов.
+- **Логи:** n8n пишет в Mongo-коллекцию `chatlogs`; дашборд читает через `GET /api/assistant/logs` (admin).
+
+> **Note (as-built ≠ as-designed):** дизайн в [`m7-design.md`](./m7-design.md) планировал regex+LLM-детект
+> и n8n-HTTP-тулы; при реализации n8n-агент с локальной Ollama оказался хрупким (imporт-ноды, paired-item,
+> Ollama-tool-calling) → итог: regex-only + OpenAI-нода→`/v1` + нативные тулы. Грабли и решения — в
+> `writeup-dz1.md` и в памяти агента (`n8n-agent-tools-gotchas`).
 
 ## Предусловия
 - `.env` в корне: `NODE_ENV, PORT, MONGO_URI, JWT_SECRET, PAYPAL_CLIENT_ID` +
